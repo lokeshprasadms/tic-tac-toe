@@ -1,391 +1,425 @@
-"use strict";
-
-// Game configuration
+// Game Configuration
 const CONFIG = {
-  playerX: 'x',
-  playerO: 'o',
-  empty: '',
-  gridSize: 5,  // 5x5 grid
-  winLength: 4,  // Need 4 in a row to win
-  scores: {
-    player: 0,
-    computer: 0,
-    tie: 0
-  },
-  difficulty: 1, // 0 = easy, 1 = hard
-  currentPlayer: 'x',
-  gameActive: false
+    PLAYER: 'X',
+    AI: 'O',
+    EMPTY: '',
+    GRID_SIZE: 5,     // 5x5 grid
+    WIN_LENGTH: 4,    // Need 4 in a row to win
+    DIFFICULTY: 'medium', // easy, medium, hard
+    GAME_ACTIVE: false
 };
 
-// Generate winning combinations for 5x5 grid
-function generateWinningCombinations() {
-  const size = CONFIG.gridSize;
-  const winLength = CONFIG.winLength;
-  const combinations = [];
-  
-  // Rows
-  for (let i = 0; i < size; i++) {
-    for (let j = 0; j <= size - winLength; j++) {
-      const row = [];
-      for (let k = 0; k < winLength; k++) {
-        row.push(i * size + j + k);
-      }
-      combinations.push(row);
-    }
-  }
-  
-  // Columns
-  for (let i = 0; i < size; i++) {
-    for (let j = 0; j <= size - winLength; j++) {
-      const col = [];
-      for (let k = 0; k < winLength; k++) {
-        col.push((j + k) * size + i);
-      }
-      combinations.push(col);
-    }
-  }
-  
-  // Diagonals (top-left to bottom-right)
-  for (let i = 0; i <= size - winLength; i++) {
-    for (let j = 0; j <= size - winLength; j++) {
-      const diag1 = [];
-      const diag2 = [];
-      for (let k = 0; k < winLength; k++) {
-        diag1.push((i + k) * size + (j + k));
-        diag2.push((i + k) * size + (j + winLength - 1 - k));
-      }
-      combinations.push(diag1);
-      combinations.push(diag2);
-    }
-  }
-  
-  return combinations;
-}
-
-// Initialize winning combinations
-CONFIG.winningCombinations = generateWinningCombinations();
-
 // DOM Elements
-const cells = document.querySelectorAll('.fixed');
+const gameBoard = document.getElementById('gameBoard');
 const playerScoreEl = document.getElementById('player_score');
-const computerScoreEl = document.getElementById('computer_score');
-const tieScoreEl = document.getElementById('tie_score');
-const restartBtn = document.getElementById('restart');
-const winModal = document.getElementById('winAnnounce');
-const winText = document.getElementById('winText');
-const optionsModal = document.getElementById('optionsDlg');
-const okBtn = document.getElementById('okBtn');
+const aiScoreEl = document.getElementById('ai_score');
+const gameStatusEl = document.getElementById('gameStatus');
+const newGameBtn = document.getElementById('newGameBtn');
+const playAgainBtn = document.getElementById('playAgainBtn');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const gameOverModal = document.getElementById('gameOverModal');
+const resultText = document.getElementById('resultText');
+const resultMessage = document.getElementById('resultMessage');
+const difficultyBtns = document.querySelectorAll('.difficulty-btn');
 
-// Game state
-let gameState = Array(25).fill('');
-let isComputerTurn = false;
+// Game State
+let gameState = Array(CONFIG.GRID_SIZE * CONFIG.GRID_SIZE).fill(CONFIG.EMPTY);
+let currentPlayer = CONFIG.PLAYER;
+let scores = {
+    player: 0,
+    ai: 0,
+    ties: 0
+};
 
-// ==================================
-// HELPER FUNCTIONS
-// ==================================
-function showModal(modal) {
-  modal.classList.add('show');
-  document.body.style.overflow = 'hidden';
-}
-
-function hideModal(modal) {
-  modal.classList.remove('show');
-  document.body.style.overflow = '';
-}
-
-function updateScores() {
-  playerScoreEl.textContent = CONFIG.scores.player;
-  computerScoreEl.textContent = CONFIG.scores.computer;
-  tieScoreEl.textContent = CONFIG.scores.tie;
-  
-  // Save scores to localStorage
-  localStorage.setItem('ticTacToeScores', JSON.stringify({
-    player: CONFIG.scores.player,
-    computer: CONFIG.scores.computer,
-    tie: CONFIG.scores.tie
-  }));
-}
-
-function animateCell(cell, callback) {
-  cell.style.transform = 'scale(0.8)';
-  setTimeout(() => {
-    cell.style.transform = 'scale(1)';
-    if (callback) callback();
-  }, 150);
-}
-
-function highlightWinningCells(cellIndices) {
-  cellIndices.forEach(index => {
-    const cell = document.getElementById(`cell${index}`);
-    cell.classList.add('win-color');
-  });
-}
-
-function disableClicks() {
-  cells.forEach(cell => {
-    cell.style.pointerEvents = 'none';
-  });
-}
-
-function enableClicks() {
-  if (!isComputerTurn) {
-    cells.forEach(cell => {
-      cell.style.pointerEvents = 'auto';
-    });
-  }
-}
-
-// ==================================
-// GAME LOGIC
-// ==================================
-function checkWinner() {
-  // Check all possible winning combinations
-  for (let i = 0; i < CONFIG.winningCombinations.length; i++) {
-    const combo = CONFIG.winningCombinations[i];
-    const firstCell = gameState[combo[0]];
+// Generate all possible winning combinations for the grid
+function generateWinningCombinations() {
+    const combinations = [];
+    const { GRID_SIZE, WIN_LENGTH } = CONFIG;
     
-    if (!firstCell) continue; // Skip if first cell is empty
+    // Generate row combinations
+    for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col <= GRID_SIZE - WIN_LENGTH; col++) {
+            const combo = [];
+            for (let i = 0; i < WIN_LENGTH; i++) {
+                combo.push(row * GRID_SIZE + col + i);
+            }
+            combinations.push(combo);
+        }
+    }
     
-    // Check if all cells in the combination are the same
-    const isWinning = combo.every(index => gameState[index] === firstCell);
+    // Generate column combinations
+    for (let col = 0; col < GRID_SIZE; col++) {
+        for (let row = 0; row <= GRID_SIZE - WIN_LENGTH; row++) {
+            const combo = [];
+            for (let i = 0; i < WIN_LENGTH; i++) {
+                combo.push((row + i) * GRID_SIZE + col);
+            }
+            combinations.push(combo);
+        }
+    }
     
-    if (isWinning) {
-      return {
-        winner: firstCell,
-        winningCombo: combo
-      };
+    // Generate diagonal (top-left to bottom-right) combinations
+    for (let row = 0; row <= GRID_SIZE - WIN_LENGTH; row++) {
+        for (let col = 0; col <= GRID_SIZE - WIN_LENGTH; col++) {
+            const combo = [];
+            for (let i = 0; i < WIN_LENGTH; i++) {
+                combo.push((row + i) * GRID_SIZE + (col + i));
+            }
+            combinations.push(combo);
+        }
     }
-  }
-  
-  // Check for draw
-  if (!gameState.includes('')) {
-    return { winner: 'tie' };
-  }
-  
-  return null;
-}
-
-function makeMove(index, player) {
-  if (gameState[index] !== '') return false;
-  
-  gameState[index] = player;
-  const cell = document.getElementById(`cell${index}`);
-  cell.textContent = player.toUpperCase();
-  cell.classList.add(player === 'x' ? 'x' : 'o');
-  
-  animateCell(cell);
-  
-  const result = checkWinner();
-  if (result) {
-    handleGameEnd(result);
-    return true;
-  }
-  
-  return true;
-}
-
-function computerMove() {
-  if (!CONFIG.gameActive) return;
-  
-  let index;
-  
-  if (CONFIG.difficulty === 0) {
-    // Easy mode: random move
-    const emptyCells = [];
-    gameState.forEach((cell, idx) => {
-      if (cell === '') emptyCells.push(idx);
-    });
-    index = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-  } else {
-    // Hard mode: use minimax algorithm with depth limit for performance
-    index = findBestMove();
-  }
-  
-  // Make the move after a short delay for better UX
-  setTimeout(() => {
-    if (index !== undefined) {  // Ensure we have a valid move
-      makeMove(index, CONFIG.playerO);
-      CONFIG.currentPlayer = CONFIG.playerX;
-      enableClicks();
-    }
-  }, 500);
-}
-
-function findBestMove() {
-  let bestScore = -Infinity;
-  let bestMove;
-  
-  // Get all empty cells
-  const emptyCells = [];
-  gameState.forEach((cell, index) => {
-    if (cell === '') emptyCells.push(index);
-  });
-  
-  // If only one move left, take it
-  if (emptyCells.length === 1) return emptyCells[0];
-  
-  // Try to find a winning move or block opponent's winning move
-  for (const index of emptyCells) {
-    // Try to win
-    gameState[index] = CONFIG.playerO;
-    if (checkWinner()?.winner === CONFIG.playerO) {
-      gameState[index] = '';
-      return index;
-    }
-    gameState[index] = '';
     
-    // Block opponent
-    gameState[index] = CONFIG.playerX;
-    if (checkWinner()?.winner === CONFIG.playerX) {
-      gameState[index] = '';
-      return index;
+    // Generate diagonal (top-right to bottom-left) combinations
+    for (let row = 0; row <= GRID_SIZE - WIN_LENGTH; row++) {
+        for (let col = WIN_LENGTH - 1; col < GRID_SIZE; col++) {
+            const combo = [];
+            for (let i = 0; i < WIN_LENGTH; i++) {
+                combo.push((row + i) * GRID_SIZE + (col - i));
+            }
+            combinations.push(combo);
+        }
     }
-    gameState[index] = '';
-  }
-  
-  // Use minimax for other moves with limited depth for performance
-  const maxDepth = 3; // Limit depth for performance
-  for (const index of emptyCells) {
-    gameState[index] = CONFIG.playerO;
-    let score = minimax(gameState, 0, false, -Infinity, Infinity, maxDepth);
-    gameState[index] = '';
     
-    if (score > bestScore) {
-      bestScore = score;
-      bestMove = index;
-    }
-  }
-  
-  return bestMove;
+    return combinations;
 }
 
-function minimax(board, depth, isMaximizing, alpha, beta, maxDepth) {
-  const result = checkWinner();
-  
-  // Terminal states
-  if (result?.winner === CONFIG.playerO) return 100 - depth;
-  if (result?.winner === CONFIG.playerX) return depth - 100;
-  if (result?.winner === 'tie' || depth >= maxDepth) return 0;
-  
-  // Get all empty cells
-  const emptyCells = [];
-  board.forEach((cell, index) => {
-    if (cell === '') emptyCells.push(index);
-  });
-  
-  if (isMaximizing) {
-    let bestScore = -Infinity;
-    for (const index of emptyCells) {
-      board[index] = CONFIG.playerO;
-      const score = minimax(board, depth + 1, false, alpha, beta, maxDepth);
-      board[index] = '';
-      bestScore = Math.max(score, bestScore);
-      alpha = Math.max(alpha, bestScore);
-      if (beta <= alpha) break; // Alpha-beta pruning
-    }
-    return bestScore;
-  } else {
-    let bestScore = Infinity;
-    for (const index of emptyCells) {
-      board[index] = CONFIG.playerX;
-      const score = minimax(board, depth + 1, true, alpha, beta, maxDepth);
-      board[index] = '';
-      bestScore = Math.min(score, bestScore);
-      beta = Math.min(beta, bestScore);
-      if (beta <= alpha) break; // Alpha-beta pruning
-    }
-    return bestScore;
-  }
-}
+// Pre-calculate all winning combinations
+const WINNING_COMBINATIONS = generateWinningCombinations();
 
-function handleGameEnd(result) {
-  CONFIG.gameActive = false;
-  
-  if (result.winner === 'tie') {
-    CONFIG.scores.tie++;
-    winText.textContent = "It's a tie!";
-  } else {
-    if (result.winner === CONFIG.playerX) {
-      CONFIG.scores.player++;
-      winText.textContent = 'You win!';
-    } else {
-      CONFIG.scores.computer++;
-      winText.textContent = 'Computer wins!';
-    }
-    highlightWinningCells(result.winningCombo);
-  }
-  
-  updateScores();
-  showModal(winModal);
-  
-  // Auto start new game after delay
-  setTimeout(() => {
-    hideModal(winModal);
+// Initialize the game
+function initGame() {
+    // Load saved scores
+    loadScores();
+    
+    // Set up event listeners
+    setupEventListeners();
+    
+    // Start a new game
     startNewGame();
-  }, 2000);
 }
-// GAME FLOW
-// ==================================
-function handleCellClick(index) {
-  // Only proceed if game is active, cell is empty, and it's player's turn
-  if (!CONFIG.gameActive || gameState[index] !== '' || CONFIG.currentPlayer !== CONFIG.playerX) {
-    return;
-  }
-  
-  // Make the player's move
-  if (makeMove(index, CONFIG.playerX)) {
-    // Switch to computer's turn if game is still active
-    if (CONFIG.gameActive) {
-      CONFIG.currentPlayer = CONFIG.playerO;
-      disableClicks();
-      setTimeout(computerMove, 500);
+
+// Set up event listeners
+function setupEventListeners() {
+    // Cell click event
+    gameBoard.addEventListener('click', handleCellClick);
+    
+    // New game button
+    newGameBtn.addEventListener('click', startNewGame);
+    
+    // Play again button
+    playAgainBtn.addEventListener('click', () => {
+        hideModal(gameOverModal);
+        startNewGame();
+    });
+    
+    // Close modal button
+    closeModalBtn.addEventListener('click', () => {
+        hideModal(gameOverModal);
+    });
+    
+    // Difficulty buttons
+    difficultyBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove active class from all buttons
+            difficultyBtns.forEach(b => b.classList.remove('active'));
+            // Add active class to clicked button
+            btn.classList.add('active');
+            // Update difficulty
+            CONFIG.DIFFICULTY = btn.dataset.difficulty;
+            // Start a new game with new difficulty
+            startNewGame();
+        });
+    });
+}
+
+// Handle cell click
+function handleCellClick(e) {
+    const cell = e.target.closest('.cell');
+    if (!cell || !CONFIG.GAME_ACTIVE || currentPlayer !== CONFIG.PLAYER) return;
+    
+    const index = parseInt(cell.dataset.index);
+    
+    // If cell is already filled, do nothing
+    if (gameState[index] !== CONFIG.EMPTY) return;
+    
+    // Make player's move
+    makeMove(index, CONFIG.PLAYER);
+    
+    // Check for win or tie
+    if (checkWin(gameState, CONFIG.PLAYER)) {
+        endGame('player');
+        return;
+    } else if (isBoardFull()) {
+        endGame('tie');
+        return;
     }
-  }
+    
+    // Switch to AI's turn
+    currentPlayer = CONFIG.AI;
+    updateStatus("AI is thinking...");
+    
+    // AI makes a move after a short delay for better UX
+    setTimeout(() => {
+        const aiMove = getAIMove();
+        makeMove(aiMove, CONFIG.AI);
+        
+        // Check for win or tie
+        if (checkWin(gameState, CONFIG.AI)) {
+            endGame('ai');
+        } else if (isBoardFull()) {
+            endGame('tie');
+        } else {
+            // Switch back to player's turn
+            currentPlayer = CONFIG.PLAYER;
+            updateStatus("Your turn (X)");
+        }
+    }, 600);
 }
 
+// Make a move on the board
+function makeMove(index, player) {
+    gameState[index] = player;
+    renderBoard();
+}
+
+// Get AI's move based on difficulty
+function getAIMove() {
+    let move;
+    
+    switch (CONFIG.DIFFICULTY) {
+        case 'easy':
+            move = getRandomMove();
+            break;
+        case 'medium':
+            // 50% chance to make a smart move, 50% random
+            move = Math.random() < 0.5 ? getBestMove() : getRandomMove();
+            break;
+        case 'hard':
+        default:
+            move = getBestMove();
+            break;
+    }
+    
+    return move;
+}
+
+// Get a random available move
+function getRandomMove() {
+    const availableMoves = [];
+    for (let i = 0; i < gameState.length; i++) {
+        if (gameState[i] === CONFIG.EMPTY) {
+            availableMoves.push(i);
+        }
+    }
+    return availableMoves[Math.floor(Math.random() * availableMoves.length)];
+}
+
+// Get the best move using minimax algorithm
+function getBestMove() {
+    let bestScore = -Infinity;
+    let bestMove = -1;
+    
+    for (let i = 0; i < gameState.length; i++) {
+        if (gameState[i] === CONFIG.EMPTY) {
+            gameState[i] = CONFIG.AI;
+            let score = minimax(gameState, 0, false, -Infinity, Infinity);
+            gameState[i] = CONFIG.EMPTY;
+            
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = i;
+            }
+        }
+    }
+    
+    return bestMove;
+}
+
+// Minimax algorithm with alpha-beta pruning
+function minimax(board, depth, isMaximizing, alpha, beta) {
+    // Check for terminal states
+    if (checkWin(board, CONFIG.AI)) return 10 - depth;
+    if (checkWin(board, CONFIG.PLAYER)) return depth - 10;
+    if (isBoardFull(board)) return 0;
+    
+    if (isMaximizing) {
+        let maxEval = -Infinity;
+        for (let i = 0; i < board.length; i++) {
+            if (board[i] === CONFIG.EMPTY) {
+                board[i] = CONFIG.AI;
+                const evaluation = minimax(board, depth + 1, false, alpha, beta);
+                board[i] = CONFIG.EMPTY;
+                maxEval = Math.max(maxEval, evaluation);
+                alpha = Math.max(alpha, evaluation);
+                if (beta <= alpha) break; // Beta cut-off
+            }
+        }
+        return maxEval;
+    } else {
+        let minEval = Infinity;
+        for (let i = 0; i < board.length; i++) {
+            if (board[i] === CONFIG.EMPTY) {
+                board[i] = CONFIG.PLAYER;
+                const evaluation = minimax(board, depth + 1, true, alpha, beta);
+                board[i] = CONFIG.EMPTY;
+                minEval = Math.min(minEval, evaluation);
+                beta = Math.min(beta, evaluation);
+                if (beta <= alpha) break; // Alpha cut-off
+            }
+        }
+        return minEval;
+    }
+}
+
+// Check if the current board has a winner
+function checkWin(board = gameState, player) {
+    // If no board is provided, use the current game state
+    board = board || gameState;
+    
+    // Check all possible winning combinations
+    for (const combination of WINNING_COMBINATIONS) {
+        // Check if all cells in the combination are occupied by the player
+        const isWinning = combination.every(index => board[index] === player);
+        if (isWinning) {
+            // Highlight winning cells
+            highlightWinningCells(combination);
+            return true;
+        }
+    }
+    return false;
+}
+
+// Highlight the winning cells
+function highlightWinningCells(cells) {
+    cells.forEach(index => {
+        const cell = document.querySelector(`.cell[data-index="${index}"]`);
+        if (cell) {
+            cell.classList.add('win');
+        }
+    });
+}
+
+// Check if the board is full
+function isBoardFull(board = gameState) {
+    return board.every(cell => cell !== CONFIG.EMPTY);
+}
+
+// Start a new game
 function startNewGame() {
-  // Reset game state
-  gameState = Array(25).fill('');
-  CONFIG.currentPlayer = CONFIG.playerX;
-  CONFIG.gameActive = true;
-  
-  // Clear the board
-  cells.forEach(cell => {
-    cell.textContent = '';
-    cell.classList.remove('win');
-    cell.style.pointerEvents = 'auto';
-    cell.style.backgroundColor = ''; // Reset any background color
-  });
-  
-  // Hide win modal if open
-  hideModal(winModal);
-  
-  // If computer starts first (not used in current config, but kept for completeness)
-  if (CONFIG.currentPlayer === CONFIG.playerO) {
-    disableClicks();
-    setTimeout(computerMove, 500);
-  }
+    // Reset game state
+    gameState = Array(CONFIG.GRID_SIZE * CONFIG.GRID_SIZE).fill(CONFIG.EMPTY);
+    currentPlayer = CONFIG.PLAYER;
+    CONFIG.GAME_ACTIVE = true;
+    
+    // Render the board
+    renderBoard();
+    
+    // Update status
+    updateStatus("Your turn (X)");
+    
+    // Hide modal if open
+    hideModal(gameOverModal);
+    
+    // If AI goes first (for future feature)
+    if (currentPlayer === CONFIG.AI) {
+        setTimeout(() => {
+            const aiMove = getAIMove();
+            makeMove(aiMove, CONFIG.AI);
+            currentPlayer = CONFIG.PLAYER;
+            updateStatus("Your turn (X)");
+        }, 600);
+    }
 }
 
-function initialize() {
-  // Load saved scores
-  const savedScores = JSON.parse(localStorage.getItem('ticTacToeScores')) || CONFIG.scores;
-  CONFIG.scores = { ...CONFIG.scores, ...savedScores };
-  updateScoreboard();
-  
-  // Set up event listeners for all cells
-  cells.forEach((cell, index) => {
-    cell.addEventListener('click', () => handleCellClick(index));
-    // Add touch support for mobile devices
-    cell.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      handleCellClick(index);
-    }, { passive: false });
-  });
-  
-  // Set up button event listeners
-  restartBtn.addEventListener('click', startNewGame);
+// Render the game board
+function renderBoard() {
+    // Clear the board
+    gameBoard.innerHTML = '';
+    
+    // Create cells
+    for (let i = 0; i < CONFIG.GRID_SIZE * CONFIG.GRID_SIZE; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.index = i;
+        
+        // Add content if cell is not empty
+        if (gameState[i] !== CONFIG.EMPTY) {
+            cell.textContent = gameState[i];
+            cell.classList.add(gameState[i].toLowerCase());
+        }
+        
+        gameBoard.appendChild(cell);
+    }
 }
 
-// Initialize the game when the page loads
-window.onload = initialize;
+// Update game status text
+function updateStatus(message) {
+    gameStatusEl.textContent = message;
+}
+
+// End the game
+function endGame(winner) {
+    CONFIG.GAME_ACTIVE = false;
+    
+    // Update scores
+    if (winner === 'player') {
+        scores.player++;
+        showGameOver('You Win!', 'Congratulations! You defeated the AI.');
+    } else if (winner === 'ai') {
+        scores.ai++;
+        showGameOver('AI Wins!', 'Better luck next time!');
+    } else {
+        scores.ties++;
+        showGameOver('Game Tied!', 'The game ended in a draw.');
+    }
+    
+    // Save scores
+    saveScores();
+    updateScores();
+}
+
+// Show game over modal
+function showGameOver(title, message) {
+    resultText.textContent = title;
+    resultMessage.textContent = message;
+    showModal(gameOverModal);
+}
+
+// Show modal
+function showModal(modal) {
+    modal.style.display = 'flex';
+    setTimeout(() => {
+        modal.classList.add('show');
+    }, 10);
+}
+
+// Hide modal
+function hideModal(modal) {
+    modal.classList.remove('show');
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300);
+}
+
+// Save scores to localStorage
+function saveScores() {
+    localStorage.setItem('ticTacToeScores', JSON.stringify(scores));
+}
+
+// Load scores from localStorage
+function loadScores() {
+    const savedScores = localStorage.getItem('ticTacToeScores');
+    if (savedScores) {
+        scores = JSON.parse(savedScores);
+        updateScores();
+    }
+}
+
+// Update score display
+function updateScores() {
+    playerScoreEl.textContent = scores.player;
+    aiScoreEl.textContent = scores.ai;
+}
+
+// Initialize the game when the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', initGame);
