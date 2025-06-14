@@ -5,11 +5,8 @@ const CONFIG = {
   playerX: 'x',
   playerO: 'o',
   empty: '',
-  winningCombinations: [
-    [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
-    [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
-    [0, 4, 8], [2, 4, 6]             // Diagonals
-  ],
+  gridSize: 5,  // 5x5 grid
+  winLength: 4,  // Need 4 in a row to win
   scores: {
     player: 0,
     computer: 0,
@@ -19,6 +16,54 @@ const CONFIG = {
   currentPlayer: 'x',
   gameActive: false
 };
+
+// Generate winning combinations for 5x5 grid
+function generateWinningCombinations() {
+  const size = CONFIG.gridSize;
+  const winLength = CONFIG.winLength;
+  const combinations = [];
+  
+  // Rows
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j <= size - winLength; j++) {
+      const row = [];
+      for (let k = 0; k < winLength; k++) {
+        row.push(i * size + j + k);
+      }
+      combinations.push(row);
+    }
+  }
+  
+  // Columns
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j <= size - winLength; j++) {
+      const col = [];
+      for (let k = 0; k < winLength; k++) {
+        col.push((j + k) * size + i);
+      }
+      combinations.push(col);
+    }
+  }
+  
+  // Diagonals (top-left to bottom-right)
+  for (let i = 0; i <= size - winLength; i++) {
+    for (let j = 0; j <= size - winLength; j++) {
+      const diag1 = [];
+      const diag2 = [];
+      for (let k = 0; k < winLength; k++) {
+        diag1.push((i + k) * size + (j + k));
+        diag2.push((i + k) * size + (j + winLength - 1 - k));
+      }
+      combinations.push(diag1);
+      combinations.push(diag2);
+    }
+  }
+  
+  return combinations;
+}
+
+// Initialize winning combinations
+CONFIG.winningCombinations = generateWinningCombinations();
 
 // DOM Elements
 const cells = document.querySelectorAll('.fixed');
@@ -32,7 +77,7 @@ const optionsModal = document.getElementById('optionsDlg');
 const okBtn = document.getElementById('okBtn');
 
 // Game state
-let gameState = Array(9).fill('');
+let gameState = Array(25).fill('');
 let isComputerTurn = false;
 
 // ==================================
@@ -94,13 +139,19 @@ function enableClicks() {
 // GAME LOGIC
 // ==================================
 function checkWinner() {
-  for (const combo of CONFIG.winningCombinations) {
-    const [a, b, c] = combo;
-    if (gameState[a] && 
-        gameState[a] === gameState[b] && 
-        gameState[a] === gameState[c]) {
+  // Check all possible winning combinations
+  for (let i = 0; i < CONFIG.winningCombinations.length; i++) {
+    const combo = CONFIG.winningCombinations[i];
+    const firstCell = gameState[combo[0]];
+    
+    if (!firstCell) continue; // Skip if first cell is empty
+    
+    // Check if all cells in the combination are the same
+    const isWinning = combo.every(index => gameState[index] === firstCell);
+    
+    if (isWinning) {
       return {
-        winner: gameState[a],
+        winner: firstCell,
         winningCombo: combo
       };
     }
@@ -134,26 +185,26 @@ function makeMove(index, player) {
 }
 
 function computerMove() {
-  if (!CONFIG.gameActive || !isComputerTurn) return;
+  if (!CONFIG.gameActive) return;
   
   let index;
   
-  if (CONFIG.difficulty === 1) {
-    // Hard mode - use minimax algorithm
-    index = findBestMove();
-  } else {
-    // Easy mode - random move
+  if (CONFIG.difficulty === 0) {
+    // Easy mode: random move
     const emptyCells = [];
-    gameState.forEach((cell, i) => {
-      if (cell === '') emptyCells.push(i);
+    gameState.forEach((cell, idx) => {
+      if (cell === '') emptyCells.push(idx);
     });
     index = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+  } else {
+    // Hard mode: use minimax algorithm with depth limit for performance
+    index = findBestMove();
   }
   
-  // Make the move after a short delay to simulate thinking
+  // Make the move after a short delay for better UX
   setTimeout(() => {
-    if (makeMove(index, CONFIG.currentPlayer)) {
-      isComputerTurn = false;
+    if (index !== undefined) {  // Ensure we have a valid move
+      makeMove(index, CONFIG.playerO);
       CONFIG.currentPlayer = CONFIG.playerX;
       enableClicks();
     }
@@ -162,53 +213,86 @@ function computerMove() {
 
 function findBestMove() {
   let bestScore = -Infinity;
-  let bestMove = -1;
+  let bestMove;
   
-  for (let i = 0; i < 9; i++) {
-    if (gameState[i] === '') {
-      gameState[i] = CONFIG.currentPlayer;
-      const score = minimax(gameState, 0, false);
-      gameState[i] = '';
-      
-      if (score > bestScore) {
-        bestScore = score;
-        bestMove = i;
-      }
+  // Get all empty cells
+  const emptyCells = [];
+  gameState.forEach((cell, index) => {
+    if (cell === '') emptyCells.push(index);
+  });
+  
+  // If only one move left, take it
+  if (emptyCells.length === 1) return emptyCells[0];
+  
+  // Try to find a winning move or block opponent's winning move
+  for (const index of emptyCells) {
+    // Try to win
+    gameState[index] = CONFIG.playerO;
+    if (checkWinner()?.winner === CONFIG.playerO) {
+      gameState[index] = '';
+      return index;
+    }
+    gameState[index] = '';
+    
+    // Block opponent
+    gameState[index] = CONFIG.playerX;
+    if (checkWinner()?.winner === CONFIG.playerX) {
+      gameState[index] = '';
+      return index;
+    }
+    gameState[index] = '';
+  }
+  
+  // Use minimax for other moves with limited depth for performance
+  const maxDepth = 3; // Limit depth for performance
+  for (const index of emptyCells) {
+    gameState[index] = CONFIG.playerO;
+    let score = minimax(gameState, 0, false, -Infinity, Infinity, maxDepth);
+    gameState[index] = '';
+    
+    if (score > bestScore) {
+      bestScore = score;
+      bestMove = index;
     }
   }
   
   return bestMove;
 }
 
-function minimax(board, depth, isMaximizing) {
+function minimax(board, depth, isMaximizing, alpha, beta, maxDepth) {
   const result = checkWinner();
   
-  if (result) {
-    if (result.winner === CONFIG.playerO) return 10 - depth;
-    if (result.winner === CONFIG.playerX) return depth - 10;
-    return 0; // Draw
-  }
+  // Terminal states
+  if (result?.winner === CONFIG.playerO) return 100 - depth;
+  if (result?.winner === CONFIG.playerX) return depth - 100;
+  if (result?.winner === 'tie' || depth >= maxDepth) return 0;
+  
+  // Get all empty cells
+  const emptyCells = [];
+  board.forEach((cell, index) => {
+    if (cell === '') emptyCells.push(index);
+  });
   
   if (isMaximizing) {
     let bestScore = -Infinity;
-    for (let i = 0; i < 9; i++) {
-      if (board[i] === '') {
-        board[i] = CONFIG.playerO;
-        const score = minimax(board, depth + 1, false);
-        board[i] = '';
-        bestScore = Math.max(score, bestScore);
-      }
+    for (const index of emptyCells) {
+      board[index] = CONFIG.playerO;
+      const score = minimax(board, depth + 1, false, alpha, beta, maxDepth);
+      board[index] = '';
+      bestScore = Math.max(score, bestScore);
+      alpha = Math.max(alpha, bestScore);
+      if (beta <= alpha) break; // Alpha-beta pruning
     }
     return bestScore;
   } else {
     let bestScore = Infinity;
-    for (let i = 0; i < 9; i++) {
-      if (board[i] === '') {
-        board[i] = CONFIG.playerX;
-        const score = minimax(board, depth + 1, true);
-        board[i] = '';
-        bestScore = Math.min(score, bestScore);
-      }
+    for (const index of emptyCells) {
+      board[index] = CONFIG.playerX;
+      const score = minimax(board, depth + 1, true, alpha, beta, maxDepth);
+      board[index] = '';
+      bestScore = Math.min(score, bestScore);
+      beta = Math.min(beta, bestScore);
+      if (beta <= alpha) break; // Alpha-beta pruning
     }
     return bestScore;
   }
@@ -240,18 +324,20 @@ function handleGameEnd(result) {
     startNewGame();
   }, 2000);
 }
-
-// ==================================
 // GAME FLOW
 // ==================================
 function handleCellClick(index) {
-  if (!CONFIG.gameActive || isComputerTurn || gameState[index] !== '') return;
+  // Only proceed if game is active, cell is empty, and it's player's turn
+  if (!CONFIG.gameActive || gameState[index] !== '' || CONFIG.currentPlayer !== CONFIG.playerX) {
+    return;
+  }
   
-  if (makeMove(index, CONFIG.currentPlayer)) {
+  // Make the player's move
+  if (makeMove(index, CONFIG.playerX)) {
+    // Switch to computer's turn if game is still active
     if (CONFIG.gameActive) {
-      isComputerTurn = true;
-      disableClicks();
       CONFIG.currentPlayer = CONFIG.playerO;
+      disableClicks();
       setTimeout(computerMove, 500);
     }
   }
@@ -259,76 +345,46 @@ function handleCellClick(index) {
 
 function startNewGame() {
   // Reset game state
-  gameState = Array(9).fill('');
+  gameState = Array(25).fill('');
+  CONFIG.currentPlayer = CONFIG.playerX;
   CONFIG.gameActive = true;
   
   // Clear the board
-  cells.forEach((cell, index) => {
+  cells.forEach(cell => {
     cell.textContent = '';
-    cell.className = 'fixed';
+    cell.classList.remove('win');
     cell.style.pointerEvents = 'auto';
-    cell.style.transform = '';
+    cell.style.backgroundColor = ''; // Reset any background color
   });
   
-  // Set starting player
-  const startWithX = document.getElementById('rx').checked;
-  CONFIG.currentPlayer = startWithX ? CONFIG.playerX : CONFIG.playerO;
+  // Hide win modal if open
+  hideModal(winModal);
   
-  // Set difficulty
-  CONFIG.difficulty = document.getElementById('r1').checked ? 1 : 0;
-  
-  // If computer goes first
+  // If computer starts first (not used in current config, but kept for completeness)
   if (CONFIG.currentPlayer === CONFIG.playerO) {
-    isComputerTurn = true;
     disableClicks();
-    setTimeout(computerMove, 800);
-  } else {
-    isComputerTurn = false;
-    enableClicks();
+    setTimeout(computerMove, 500);
   }
-}
-
-function showOptions() {
-  // Set default options
-  document.getElementById('r1').checked = CONFIG.difficulty === 1;
-  document.getElementById('r0').checked = CONFIG.difficulty === 0;
-  document.getElementById('rx').checked = true; // Default to X first
-  document.getElementById('ro').checked = false;
-  
-  showModal(optionsModal);
 }
 
 function initialize() {
   // Load saved scores
-  const savedScores = localStorage.getItem('ticTacToeScores');
-  if (savedScores) {
-    const scores = JSON.parse(savedScores);
-    CONFIG.scores.player = scores.player || 0;
-    CONFIG.scores.computer = scores.computer || 0;
-    CONFIG.scores.tie = scores.tie || 0;
-    updateScores();
-  }
+  const savedScores = JSON.parse(localStorage.getItem('ticTacToeScores')) || CONFIG.scores;
+  CONFIG.scores = { ...CONFIG.scores, ...savedScores };
+  updateScoreboard();
   
-  // Set up event listeners
+  // Set up event listeners for all cells
   cells.forEach((cell, index) => {
     cell.addEventListener('click', () => handleCellClick(index));
+    // Add touch support for mobile devices
+    cell.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      handleCellClick(index);
+    }, { passive: false });
   });
   
-  restartBtn.addEventListener('click', () => showOptions());
-  okBtn.addEventListener('click', () => {
-    hideModal(optionsModal);
-    startNewGame();
-  });
-  
-  // Close modals when clicking outside
-  window.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal')) {
-      hideModal(e.target);
-    }
-  });
-  
-  // Start the game
-  showOptions();
+  // Set up button event listeners
+  restartBtn.addEventListener('click', startNewGame);
 }
 
 // Initialize the game when the page loads
