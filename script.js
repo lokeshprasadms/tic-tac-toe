@@ -18,6 +18,7 @@ let humanPlayer = 'X'; // 'X' or 'O'
 let aiPlayer = 'O'; // 'X' or 'O'
 let gameActive = false;
 let difficulty = 'easy'; // easy, medium, hard
+let winningLine = []; // Stores the coordinates of the winning cells
 
 // --- Event Listeners ---
 startGameBtn.addEventListener('click', startGame);
@@ -31,6 +32,8 @@ restartGameBtn.addEventListener('click', resetGame);
 function initializeBoard() {
     gameBoard.innerHTML = ''; // Clear existing cells
     board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(''));
+    winningLine = []; // Clear winning line from previous game
+    clearWinningHighlight(); // Ensure no highlights from previous game
 
     for (let i = 0; i < BOARD_SIZE; i++) {
         for (let j = 0; j < BOARD_SIZE; j++) {
@@ -53,7 +56,7 @@ function startGame() {
     aiPlayer = (humanPlayer === 'X') ? 'O' : 'X';
     currentPlayer = 'X'; // X always starts
 
-    initializeBoard();
+    initializeBoard(); // This also clears previous highlights
     gameMessage.textContent = ''; // Clear any previous messages
     updateTurnDisplay();
 
@@ -74,6 +77,8 @@ function resetGame() {
     gameSetup.classList.remove('hidden');
     gameArea.classList.add('hidden');
     gameMessage.textContent = '';
+    winningLine = []; // Clear winning line on reset
+    clearWinningHighlight(); // Ensure highlights are removed
     // No need to re-initialize board here, startGame will do it
 }
 
@@ -108,7 +113,9 @@ function makeMove(row, col, player) {
         cell.textContent = player;
         cell.classList.add(player); // Add class for styling (e.g., color)
 
-        if (checkWin(player)) {
+        const winResult = checkWin(player); // checkWin now returns winning line or null
+        if (winResult) {
+            winningLine = winResult; // Store the winning line
             endGame(player);
         } else if (checkDraw()) {
             endGame('draw');
@@ -133,10 +140,9 @@ function updateTurnDisplay() {
 /**
  * Checks if the given player has won.
  * @param {string} player - The player to check ('X' or 'O').
- * @returns {boolean} - True if the player has won, false otherwise.
+ * @returns {Array<object>|null} - An array of winning cell coordinates ({row, col}) if the player has won, null otherwise.
  */
 function checkWin(player) {
-    // Check rows, columns, and diagonals
     const directions = [
         [0, 1],   // Horizontal
         [1, 0],   // Vertical
@@ -145,28 +151,31 @@ function checkWin(player) {
     ];
 
     for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
+        for (let c = 0; c; c < BOARD_SIZE; c++) {
             if (board[r][c] === player) {
                 for (const [dr, dc] of directions) {
                     let count = 1;
+                    const currentLine = [{ row: r, col: c }]; // Start with the current cell
+
                     for (let i = 1; i < WIN_CONDITION; i++) {
                         const nr = r + dr * i;
                         const nc = c + dc * i;
 
                         if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr][nc] === player) {
                             count++;
+                            currentLine.push({ row: nr, col: nc });
                         } else {
                             break; // Sequence broken
                         }
                     }
                     if (count >= WIN_CONDITION) {
-                        return true;
+                        return currentLine; // Return the winning line
                     }
                 }
             }
         }
     }
-    return false;
+    return null; // No win found
 }
 
 /**
@@ -181,11 +190,11 @@ function checkDraw() {
             }
         }
     }
-    return true; // Board is full, and no win was detected
+    return true; // Board is full, and no win was detected by checkWin
 }
 
 /**
- * Ends the game, displaying the result.
+ * Ends the game, displaying the result and highlighting winning cells if applicable.
  * @param {string} result - The result of the game ('X', 'O', or 'draw').
  */
 function endGame(result) {
@@ -196,10 +205,32 @@ function endGame(result) {
     } else if (result === humanPlayer) {
         gameMessage.textContent = "You Win!";
         gameMessage.style.color = '#28a745'; // Green for win
+        highlightWinningCells();
     } else {
         gameMessage.textContent = "AI Wins!";
         gameMessage.style.color = '#dc3545'; // Red for loss
+        highlightWinningCells();
     }
+}
+
+/**
+ * Highlights the cells that form the winning line.
+ */
+function highlightWinningCells() {
+    winningLine.forEach(coord => {
+        const cell = gameBoard.children[coord.row * BOARD_SIZE + coord.col];
+        cell.classList.add('win');
+    });
+}
+
+/**
+ * Removes the winning highlight from all cells.
+ */
+function clearWinningHighlight() {
+    const cells = document.querySelectorAll('.cell.win');
+    cells.forEach(cell => {
+        cell.classList.remove('win');
+    });
 }
 
 // --- AI Logic (Simplified for a 5x5 grid) ---
@@ -217,8 +248,6 @@ function makeAIMove() {
     } else if (difficulty === 'medium') {
         bestMove = getMediumAIMove();
     } else if (difficulty === 'hard') {
-        // For 5x5, a full Minimax is too slow.
-        // Hard AI will prioritize winning, blocking, then medium strategy.
         bestMove = getHardAIMove();
     }
 
@@ -244,8 +273,8 @@ function getRandomEmptyCell() {
         }
     }
     if (emptyCells.length > 0) {
-        const randomIndex = Math.floor(Math.random() * emptyCells.length);
-        return emptyCells[randomIndex];
+        const randomIndex = Math.random() * emptyCells.length; // No floor needed before returning, as it's an index for a random element
+        return emptyCells[Math.floor(randomIndex)];
     }
     return null;
 }
@@ -342,7 +371,7 @@ function findWinningMove(player) {
         for (let c = 0; c < BOARD_SIZE; c++) {
             if (board[r][c] === '') { // Only consider empty cells
                 board[r][c] = player; // Temporarily make the move
-                if (checkWin(player)) {
+                if (checkWin(player)) { // checkWin now returns winning line or null
                     board[r][c] = ''; // Undo the move
                     return { row: r, col: c };
                 }
@@ -355,11 +384,12 @@ function findWinningMove(player) {
 
 /**
  * Finds a move that creates or blocks a line of a certain length for a given player.
+ * This is a simplified heuristic, not a full minimax evaluation.
  * @param {string} player - The player ('X' or 'O') to check for.
- * @param {number} requiredLength - The number of consecutive marks needed to extend.
+ * @param {number} targetLength - The desired length of the line (e.g., 2 to create a 3-in-a-row).
  * @returns {object|null} - An object with row and col if such a move is found, otherwise null.
  */
-function findLineCreationMove(player, requiredLength) {
+function findLineCreationMove(player, targetLength) {
     const directions = [
         [0, 1],   // Horizontal
         [1, 0],   // Vertical
@@ -367,63 +397,47 @@ function findLineCreationMove(player, requiredLength) {
         [1, -1]   // Diagonal (top-right to bottom-left)
     ];
 
-    // Iterate through all empty cells
     for (let r = 0; r < BOARD_SIZE; r++) {
         for (let c = 0; c < BOARD_SIZE; c++) {
             if (board[r][c] === '') {
-                // Temporarily place the player's mark
-                board[r][c] = player;
+                board[r][c] = player; // Temporarily make the move
 
-                // Check if this move creates a line of 'requiredLength + 1'
-                // Or if it contributes to a potential line that the AI can extend
-                // This is a simplified check, not a full minimax evaluation
                 for (const [dr, dc] of directions) {
-                    // Check around the current cell for existing player marks
-                    // and if placing here would extend a line or create a new one.
-
-                    // Check forward
-                    let count = 1; // Current cell counts as 1
-                    for (let i = 1; i <= requiredLength; i++) {
+                    let consecutiveCount = 0;
+                    // Check in one direction
+                    for (let i = 0; i < WIN_CONDITION; i++) { // Check up to WIN_CONDITION cells
                         const nr = r + dr * i;
                         const nc = c + dc * i;
                         if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr][nc] === player) {
-                            count++;
-                        } else if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr][nc] === '') {
-                            // Can extend further if this spot is empty
-                            // Don't break immediately, might be an empty spot then player mark
+                            consecutiveCount++;
                         } else {
                             break;
                         }
                     }
-                    if (count >= requiredLength + 1) { // We made a move and got requiredLength + 1 marks
-                         board[r][c] = ''; // Undo the temporary move
-                         return { row: r, col: c };
-                    }
 
-                    // Check backward
-                    count = 1;
-                    for (let i = 1; i <= requiredLength; i++) {
+                    // Also check in the opposite direction
+                    for (let i = 1; i < WIN_CONDITION; i++) {
                         const nr = r - dr * i;
                         const nc = c - dc * i;
                         if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr][nc] === player) {
-                            count++;
-                        } else if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr][nc] === '') {
-                            // Can extend further
+                            consecutiveCount++;
                         } else {
                             break;
                         }
                     }
-                     if (count >= requiredLength + 1) {
-                         board[r][c] = '';
-                         return { row: r, col: c };
+
+                    if (consecutiveCount >= targetLength) {
+                        board[r][c] = ''; // Undo the temporary move
+                        return { row: r, col: c }; // Found a good spot
                     }
                 }
                 board[r][c] = ''; // Undo the temporary move
             }
         }
     }
-    return null;
+    return null; // No move found to create target length line
 }
+
 
 // Initial board setup on page load
 initializeBoard();
