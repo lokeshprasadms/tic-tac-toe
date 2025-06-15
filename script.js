@@ -4,9 +4,43 @@ const CONFIG = {
     AI: 'O',
     EMPTY: '',
     GRID_SIZE: 5,
-    WIN_LENGTH: 4,
+    WIN_LENGTH: 5, // Changed to 5 for 5x5
     DIFFICULTY: 'medium',
-    GAME_ACTIVE: false
+    GAME_ACTIVE: false,
+    ANIMATION_DELAY: 300 // ms for AI move animation
+};
+
+// AI difficulty settings
+const DIFFICULTY_SETTINGS = {
+    easy: {
+        winWeight: 1,
+        blockWeight: 1,
+        randomMoveChance: 0.8,  // More random moves
+        depth: 1,
+        searchDepth: 2
+    },
+    medium: {
+        winWeight: 3,
+        blockWeight: 2,
+        randomMoveChance: 0.4,
+        depth: 2,
+        searchDepth: 3
+    },
+    hard: {
+        winWeight: 5,
+        blockWeight: 4,
+        randomMoveChance: 0.2,
+        depth: 3,
+        searchDepth: 4
+    },
+    expert: {
+        winWeight: 10,
+        blockWeight: 8,
+        randomMoveChance: 0,    // No random moves
+        depth: 4,
+        searchDepth: 5,  // Deeper search for expert
+        useHeuristics: true    // Additional heuristics for expert
+    }
 };
 
 // DOM Elements
@@ -45,7 +79,11 @@ function initGame() {
     renderBoard();
     setupEventListeners();
     loadScores();
+    loadDifficulty();
     updateStatus("Your turn (X)");
+    
+    // Remove any existing game over state
+    document.body.classList.remove('game-over');
 }
 
 // Set up event listeners
@@ -58,10 +96,7 @@ function setupEventListeners() {
     // Difficulty buttons
     difficultyBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            difficultyBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            CONFIG.DIFFICULTY = btn.dataset.difficulty;
-            if (CONFIG.GAME_ACTIVE) startNewGame();
+            setDifficulty(btn.dataset.level);
         });
     });
     
@@ -75,165 +110,282 @@ function setupEventListeners() {
 
 // Handle cell click
 function handleCellClick(e) {
-    if (!CONFIG.GAME_ACTIVE) return;
+    if (!CONFIG.GAME_ACTIVE || currentPlayer !== CONFIG.PLAYER) return;
     
     const cell = e.target.closest('.cell');
     if (!cell) return;
     
     const index = parseInt(cell.dataset.index);
-    
-    // If cell is not empty, do nothing
     if (gameState[index] !== CONFIG.EMPTY) return;
     
     // Make player's move
-    makeMove(index, CONFIG.PLAYER);
-    
-    // Check for win or draw
-    if (checkWin(gameState, CONFIG.PLAYER)) {
-        endGame('player');
-        return;
-    }
-    
-    if (isBoardFull()) {
-        endGame('draw');
-        return;
-    }
-    
-    // AI's turn
-    CONFIG.GAME_ACTIVE = false; // Prevent player from making moves while AI is thinking
-    
-    // Small delay for better UX
-    setTimeout(() => {
-        const aiMove = getAIMove();
-        if (aiMove !== -1) {
-            makeMove(aiMove, CONFIG.AI);
-            
-            if (checkWin(gameState, CONFIG.AI)) {
-                endGame('ai');
-                return;
-            }
-            
-            if (isBoardFull()) {
-                endGame('draw');
-                return;
-            }
-        }
+    if (makeMove(index, CONFIG.PLAYER)) {
+        // Switch to AI's turn
+        currentPlayer = CONFIG.AI;
+        updateStatus("AI is thinking...");
         
-        CONFIG.GAME_ACTIVE = true; // Re-enable player moves
-    }, 100); // Reduced delay for better responsiveness
+        // AI makes a move after a short delay
+        if (CONFIG.GAME_ACTIVE) {
+            setTimeout(() => {
+                if (!CONFIG.GAME_ACTIVE || currentPlayer !== CONFIG.AI) return;
+                
+                const aiMove = getAIMove();
+                if (aiMove !== -1 && gameState[aiMove] === CONFIG.EMPTY) {
+                    makeMove(aiMove, CONFIG.AI);
+                    currentPlayer = CONFIG.PLAYER;
+                    updateStatus("Your turn (X)");
+                }
+            }, CONFIG.ANIMATION_DELAY);
+        }
+    }
 }
 
 // Make a move on the board
 function makeMove(index, player) {
-    gameState[index] = player;
-    const cell = document.querySelector(`.cell[data-index="${index}"]`);
-    cell.textContent = player;
-    cell.classList.add(player.toLowerCase());
+    if (gameState[index] !== CONFIG.EMPTY || !CONFIG.GAME_ACTIVE) return false;
     
-    // Update status
-    updateStatus(player === CONFIG.PLAYER ? "AI's turn (O)" : "Your turn (X)");
+    gameState[index] = player;
+    const cell = document.querySelector(`[data-index="${index}"]`);
+    if (cell) {
+        cell.textContent = player;
+        cell.classList.add(player === CONFIG.PLAYER ? 'player-move' : 'ai-move');
+        
+        // Add animation class
+        cell.classList.add('move-animation');
+        setTimeout(() => cell.classList.remove('move-animation'), 150);
+    }
+    
+    // Check for win or draw
+    if (checkWin(gameState, player)) {
+        endGame(player === CONFIG.PLAYER ? 'player' : 'ai');
+        return true;
+    } else if (isBoardFull()) {
+        endGame('draw');
+        return true;
+    }
+    
+    return true;
 }
 
 // Get AI's move based on difficulty
 function getAIMove() {
-    const emptyCells = [];
-    gameState.forEach((cell, index) => {
-        if (cell === CONFIG.EMPTY) emptyCells.push(index);
-    });
+    const difficulty = CONFIG.DIFFICULTY;
+    const settings = DIFFICULTY_SETTINGS[difficulty];
     
-    // If no empty cells, return -1 (shouldn't happen)
-    if (emptyCells.length === 0) return -1;
+    // Check for immediate win or block
+    const winMove = findWinningMove(CONFIG.AI);
+    if (winMove !== -1) return winMove;
     
-    // Get move based on difficulty
-    switch (CONFIG.DIFFICULTY) {
-        case 'easy':
-            return getRandomMove(emptyCells);
-        case 'hard':
-            return getBestMove();
-        case 'medium':
-        default:
-            // 70% chance of best move, 30% random move
-            return Math.random() < 0.7 ? getBestMove() : getRandomMove(emptyCells);
+    const blockMove = findWinningMove(CONFIG.PLAYER);
+    if (blockMove !== -1) return blockMove;
+    
+    // Use minimax for harder difficulties
+    if (difficulty === 'hard' || difficulty === 'expert') {
+        return findBestMove();
     }
+    
+    // For easier difficulties, sometimes make random moves
+    if (Math.random() < settings.randomMoveChance) {
+        return getRandomMove();
+    }
+    
+    // Use minimax for medium+
+    if (difficulty === 'medium' || difficulty === 'hard') {
+        return findBestMove();
+    }
+    
+    // Default to random move
+    return getRandomMove();
 }
 
-// Get a random available move
-function getRandomMove(emptyCells) {
-    const index = Math.floor(Math.random() * emptyCells.length);
-    return emptyCells[index];
-}
-
-// Get the best move using a simplified strategy (faster than minimax for 5x5)
-function getBestMove() {
-    const emptyCells = [];
+// Find a winning move for the given player
+function findWinningMove(player) {
     for (let i = 0; i < gameState.length; i++) {
-        if (gameState[i] === CONFIG.EMPTY) {
-            emptyCells.push(i);
+        if (gameState[i] !== CONFIG.EMPTY) continue;
+        
+        // Test move
+        gameState[i] = player;
+        const isWin = checkWin(gameState, player);
+        gameState[i] = CONFIG.EMPTY; // Undo
+        
+        if (isWin) return i;
+    }
+    return -1;
+}
+
+// Evaluate board for minimax
+function evaluateBoard(board, player) {
+    const opponent = player === CONFIG.PLAYER ? CONFIG.AI : CONFIG.PLAYER;
+    let score = 0;
+    
+    // Check all possible lines
+    const lines = [];
+    
+    // Rows
+    for (let row = 0; row < CONFIG.GRID_SIZE; row++) {
+        for (let col = 0; col <= CONFIG.GRID_SIZE - CONFIG.WIN_LENGTH; col++) {
+            const line = [];
+            for (let i = 0; i < CONFIG.WIN_LENGTH; i++) {
+                line.push(row * CONFIG.GRID_SIZE + col + i);
+            }
+            lines.push(line);
         }
     }
     
-    // 1. Check for immediate win
-    for (const move of emptyCells) {
-        gameState[move] = CONFIG.AI;
-        if (checkWin(gameState, CONFIG.AI)) {
-            gameState[move] = CONFIG.EMPTY;
-            return move;
+    // Columns
+    for (let col = 0; col < CONFIG.GRID_SIZE; col++) {
+        for (let row = 0; row <= CONFIG.GRID_SIZE - CONFIG.WIN_LENGTH; row++) {
+            const line = [];
+            for (let i = 0; i < CONFIG.WIN_LENGTH; i++) {
+                line.push((row + i) * CONFIG.GRID_SIZE + col);
+            }
+            lines.push(line);
         }
-        gameState[move] = CONFIG.EMPTY;
     }
     
-    // 2. Block player's immediate win
-    for (const move of emptyCells) {
-        gameState[move] = CONFIG.PLAYER;
-        if (checkWin(gameState, CONFIG.PLAYER)) {
-            gameState[move] = CONFIG.EMPTY;
-            return move;
+    // Diagonals
+    for (let row = 0; row <= CONFIG.GRID_SIZE - CONFIG.WIN_LENGTH; row++) {
+        for (let col = 0; col <= CONFIG.GRID_SIZE - CONFIG.WIN_LENGTH; col++) {
+            // Top-left to bottom-right
+            const diag1 = [];
+            // Top-right to bottom-left
+            const diag2 = [];
+            for (let i = 0; i < CONFIG.WIN_LENGTH; i++) {
+                diag1.push((row + i) * CONFIG.GRID_SIZE + (col + i));
+                diag2.push((row + i) * CONFIG.GRID_SIZE + (col + CONFIG.WIN_LENGTH - 1 - i));
+            }
+            lines.push(diag1);
+            lines.push(diag2);
         }
-        gameState[move] = CONFIG.EMPTY;
     }
     
-    // 3. Take center if available
-    const center = Math.floor((CONFIG.GRID_SIZE * CONFIG.GRID_SIZE) / 2);
+    // Evaluate each line
+    for (const line of lines) {
+        let playerCount = 0, opponentCount = 0, emptyCount = 0;
+        
+        for (const idx of line) {
+            if (board[idx] === player) playerCount++;
+            else if (board[idx] === opponent) opponentCount++;
+            else emptyCount++;
+        }
+        
+        // Score based on line potential
+        if (playerCount > 0 && opponentCount === 0) {
+            score += Math.pow(10, playerCount);
+        } else if (opponentCount > 0 && playerCount === 0) {
+            score -= Math.pow(10, opponentCount);
+        }
+    }
+    
+    return score;
+}
+
+// Find best move using minimax with alpha-beta pruning
+function findBestMove() {
+    let bestScore = -Infinity;
+    let bestMove = -1;
+    const settings = DIFFICULTY_SETTINGS[CONFIG.DIFFICULTY];
+    
+    // Check center first (best first move)
+    const center = Math.floor(CONFIG.GRID_SIZE * CONFIG.GRID_SIZE / 2);
     if (gameState[center] === CONFIG.EMPTY) {
         return center;
     }
     
-    // 4. Take a corner if available
+    // Check corners
     const corners = [0, CONFIG.GRID_SIZE - 1, 
-                    (CONFIG.GRID_SIZE * (CONFIG.GRID_SIZE - 1)), 
+                    (CONFIG.GRID_SIZE * CONFIG.GRID_SIZE) - CONFIG.GRID_SIZE, 
                     (CONFIG.GRID_SIZE * CONFIG.GRID_SIZE) - 1];
-    const availableCorners = corners.filter(i => gameState[i] === CONFIG.EMPTY);
-    if (availableCorners.length > 0) {
-        return availableCorners[Math.floor(Math.random() * availableCorners.length)];
+    const emptyCorners = corners.filter(idx => gameState[idx] === CONFIG.EMPTY);
+    if (emptyCorners.length > 0) {
+        return emptyCorners[Math.floor(Math.random() * emptyCorners.length)];
     }
     
-    // 5. Take a side if available
-    const sides = [];
-    for (let i = 0; i < CONFIG.GRID_SIZE; i++) {
-        // Top and bottom sides
-        if (i > 0 && i < CONFIG.GRID_SIZE - 1) {
-            if (gameState[i] === CONFIG.EMPTY) sides.push(i); // Top
-            if (gameState[i + (CONFIG.GRID_SIZE * (CONFIG.GRID_SIZE - 1))] === CONFIG.EMPTY) 
-                sides.push(i + (CONFIG.GRID_SIZE * (CONFIG.GRID_SIZE - 1))); // Bottom
-        }
-        // Left and right sides (skip corners as they're already checked)
-        if (i > 0 && i < CONFIG.GRID_SIZE - 1) {
-            if (gameState[i * CONFIG.GRID_SIZE] === CONFIG.EMPTY) 
-                sides.push(i * CONFIG.GRID_SIZE); // Left
-            if (gameState[(i * CONFIG.GRID_SIZE) + (CONFIG.GRID_SIZE - 1)] === CONFIG.EMPTY) 
-                sides.push((i * CONFIG.GRID_SIZE) + (CONFIG.GRID_SIZE - 1)); // Right
+    // Use minimax for remaining moves
+    for (let i = 0; i < gameState.length; i++) {
+        if (gameState[i] === CONFIG.EMPTY) {
+            gameState[i] = CONFIG.AI;
+            const score = minimax(gameState, 0, false, -Infinity, Infinity, settings.depth);
+            gameState[i] = CONFIG.EMPTY;
+            
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = i;
+            }
         }
     }
     
-    if (sides.length > 0) {
-        return sides[Math.floor(Math.random() * sides.length)];
-    }
-    
-    // 6. If all else fails, return a random move
-    return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    return bestMove !== -1 ? bestMove : getRandomMove();
 }
 
-// Check if there's a winner
+// Get a random valid move
+function getRandomMove() {
+    const availableMoves = [];
+    gameState.forEach((cell, index) => {
+        if (cell === CONFIG.EMPTY) availableMoves.push(index);
+    });
+    return availableMoves.length > 0 
+        ? availableMoves[Math.floor(Math.random() * availableMoves.length)]
+        : -1;
+}
+
+// Minimax algorithm with alpha-beta pruning
+function minimax(board, depth, isMaximizing, alpha, beta, maxDepth) {
+    const currentPlayer = isMaximizing ? CONFIG.AI : CONFIG.PLAYER;
+    const opponent = isMaximizing ? CONFIG.PLAYER : CONFIG.AI;
+    
+    // Check terminal states or max depth
+    if (checkWin(board, CONFIG.AI)) return 1000 - depth;
+    if (checkWin(board, CONFIG.PLAYER)) return -1000 + depth;
+    if (isBoardFull() || depth >= maxDepth) {
+        return evaluateBoard(board, CONFIG.AI);
+    }
+    
+    if (isMaximizing) {
+        let maxEval = -Infinity;
+        
+        // Get all possible moves
+        const moves = [];
+        for (let i = 0; i < board.length; i++) {
+            if (board[i] === CONFIG.EMPTY) {
+                // Try the move
+                board[i] = CONFIG.AI;
+                const eval = minimax(board, depth + 1, false, alpha, beta, maxDepth);
+                board[i] = CONFIG.EMPTY; // Undo
+                
+                // Alpha-beta pruning
+                maxEval = Math.max(maxEval, eval);
+                alpha = Math.max(alpha, eval);
+                if (beta <= alpha) {
+                    break; // Beta cut-off
+                }
+            }
+        }
+        return maxEval;
+    } else {
+        let minEval = Infinity;
+        
+        // Get all possible moves
+        for (let i = 0; i < board.length; i++) {
+            if (board[i] === CONFIG.EMPTY) {
+                // Try the move
+                board[i] = CONFIG.PLAYER;
+                const eval = minimax(board, depth + 1, true, alpha, beta, maxDepth);
+                board[i] = CONFIG.EMPTY; // Undo
+                
+                // Alpha-beta pruning
+                minEval = Math.min(minEval, eval);
+                beta = Math.min(beta, eval);
+                if (beta <= alpha) {
+                    break; // Alpha cut-off
+                }
+            }
+        }
+        return minEval;
+    }
+}
+
+// Check if a player has won
 function checkWin(board, player) {
     // Check rows
     for (let row = 0; row < CONFIG.GRID_SIZE; row++) {
@@ -268,7 +420,7 @@ function checkWin(board, player) {
         for (let col = 0; col <= CONFIG.GRID_SIZE - CONFIG.WIN_LENGTH; col++) {
             let win = true;
             for (let i = 0; i < CONFIG.WIN_LENGTH; i++) {
-                if (board[(row + i) * CONFIG.GRID_SIZE + col + i] !== player) {
+                if (board[(row + i) * CONFIG.GRID_SIZE + (col + i)] !== player) {
                     win = false;
                     break;
                 }
@@ -282,7 +434,7 @@ function checkWin(board, player) {
         for (let col = CONFIG.WIN_LENGTH - 1; col < CONFIG.GRID_SIZE; col++) {
             let win = true;
             for (let i = 0; i < CONFIG.WIN_LENGTH; i++) {
-                if (board[(row + i) * CONFIG.GRID_SIZE + col - i] !== player) {
+                if (board[(row + i) * CONFIG.GRID_SIZE + (col - i)] !== player) {
                     win = false;
                     break;
                 }
@@ -327,13 +479,23 @@ function startNewGame() {
 function renderBoard() {
     gameBoard.innerHTML = '';
     
+    // Create a document fragment for better performance
+    const fragment = document.createDocumentFragment();
+    
     for (let i = 0; i < CONFIG.GRID_SIZE * CONFIG.GRID_SIZE; i++) {
-        const cell = document.createElement('div');
+        const cell = document.createElement('button');
         cell.className = 'cell';
         cell.dataset.index = i;
+        cell.setAttribute('aria-label', `Cell ${Math.floor(i / CONFIG.GRID_SIZE) + 1},${(i % CONFIG.GRID_SIZE) + 1}`);
         cell.addEventListener('click', handleCellClick);
-        gameBoard.appendChild(cell);
+        
+        // Add touch events for mobile
+        cell.addEventListener('touchstart', handleCellClick, { passive: true });
+        
+        fragment.appendChild(cell);
     }
+    
+    gameBoard.appendChild(fragment);
 }
 
 // Update game status text
@@ -343,27 +505,21 @@ function updateStatus(message) {
 
 // End the game
 function endGame(winner) {
+    if (!CONFIG.GAME_ACTIVE) return; // Prevent multiple end game calls
+    
     CONFIG.GAME_ACTIVE = false;
+    document.body.classList.add('game-over');
     
-    // Update scores and show appropriate message
-    let title, message;
-    
-    switch (winner) {
-        case 'player':
-            scores.player++;
-            title = 'You Win!';
-            message = 'Congratulations! You defeated the AI!';
-            break;
-        case 'ai':
-            scores.ai++;
-            title = 'AI Wins!';
-            message = 'Better luck next time!';
-            break;
-        case 'draw':
-            scores.ties++;
-            title = 'Game Drawn!';
-            message = 'The game ended in a draw!';
-            break;
+    // Update scores
+    if (winner === 'player') {
+        scores.player++;
+        showGameOver('You Win!', 'Congratulations! You defeated the AI!');
+    } else if (winner === 'ai') {
+        scores.ai++;
+        showGameOver('Game Over', 'The AI won this round. Try again!');
+    } else {
+        scores.ties++;
+        showGameOver('Draw!', 'The game ended in a draw!');
     }
     
     // Update UI
