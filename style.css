@@ -161,24 +161,68 @@ select {
     cursor: pointer;
     transition: all 0.2s ease;
     aspect-ratio: 1/1;
+    position: relative;
+    overflow: hidden;
 }
 
-.cell:hover {
-    background: var(--cell-hover);
+.cell::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0);
+    transition: background 0.2s ease;
+    pointer-events: none;
+}
+
+.cell:not(.x):not(.o):hover::after {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.cell.x, .cell.o {
+    font-weight: bold;
+    position: relative;
+    z-index: 1;
 }
 
 .cell.x {
     color: #FF6B6B;
+    text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
 }
 
 .cell.o {
     color: #4ECDC4;
+    text-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
 }
 
 .cell.win {
-    background: rgba(139, 195, 74, 0.3);
-    transform: scale(0.95);
-    box-shadow: 0 0 15px rgba(139, 195, 74, 0.5);
+    animation: pulse 1s infinite alternate;
+    background: rgba(76, 175, 80, 0.2);
+    border-color: #4CAF50;
+    z-index: 2;
+}
+
+@keyframes pulse {
+    from {
+        transform: scale(0.95);
+        box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+    }
+    to {
+        transform: scale(1.05);
+        box-shadow: 0 0 20px rgba(76, 175, 80, 0.8);
+    }
+}
+
+/* Disable hover effects when game is over */
+.game-over .cell:not(.win) {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.game-over .cell:not(.win):hover::after {
+    background: transparent;
 }
 
 .restart-btn {
