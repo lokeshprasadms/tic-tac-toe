@@ -1,172 +1,201 @@
-/* Reset and Base Styles */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-}
-
+/* Basic Reset & Body Styling */
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
-    background-color: #f8f0ff;
-    height: 100vh;
+    margin: 0;
+    font-family: 'Arial', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
-    touch-action: manipulation;
+    min-height: 100vh;
+    background-color: #f0f0f0;
+    color: #333;
+    box-sizing: border-box; /* Include padding and border in element's total width and height */
 }
 
+/* Game Container */
 .game-container {
-    width: 100%;
-    max-width: 400px;
-    padding: 0 15px;
-}
-
-.screen {
-    width: 100%;
-    transition: opacity 0.3s ease;
-}
-
-.hidden {
-    display: none;
-    opacity: 0;
-}
-
-/* Options Screen */
-.options-container {
-    background: white;
-    border-radius: 16px;
+    background-color: #fff;
     padding: 25px;
-    box-shadow: 0 10px 30px rgba(138, 43, 226, 0.15);
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     text-align: center;
-}
-
-h2 {
-    color: #6a1b9a;
-    margin-bottom: 15px;
-    font-size: 1.3rem;
-}
-
-.options-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 25px;
-}
-
-.option-btn {
-    background: #f3e5f5;
-    border: 2px solid #e1bee7;
-    border-radius: 10px;
-    padding: 12px;
-    font-size: 1rem;
-    color: #6a1b9a;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.option-btn:hover, .option-btn.selected {
-    background: #9c27b0;
-    color: white;
-    border-color: #9c27b0;
-}
-
-.start-btn {
-    background: #9c27b0;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 12px 30px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
     width: 100%;
-    transition: all 0.2s ease;
+    max-width: 600px; /* Max width for desktop */
+    margin: 20px; /* Add some margin for smaller screens */
+    box-sizing: border-box;
 }
 
-.start-btn:active {
-    transform: scale(0.98);
+h1 {
+    color: #4CAF50; /* A pleasant green */
+    margin-bottom: 20px;
 }
 
-/* Game Screen */
-.score-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+/* Game Sections (Setup & Area) */
+.game-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.game-section.hidden {
+    display: none;
+}
+
+/* Game Setup Options */
+.option-group {
     margin-bottom: 15px;
-    padding: 0 5px;
 }
 
-.score {
-    font-size: 1.1rem;
-    color: #6a1b9a;
-    font-weight: 600;
+.option-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
 }
 
-.restart-btn {
-    background: #f3e5f5;
-    border: 2px solid #e1bee7;
-    border-radius: 8px;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    color: #6a1b9a;
+.option-group select {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    width: 80%;
+    max-width: 200px;
+    box-sizing: border-box;
+}
+
+/* Buttons */
+button {
+    background-color: #007bff; /* Blue for primary actions */
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 5px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    font-size: 1em;
+    margin-top: 15px;
+    transition: background-color 0.2s ease;
 }
 
-.restart-btn:active {
-    transform: rotate(180deg);
+button:hover {
+    background-color: #0056b3;
 }
 
-.board {
+#restart-game-btn {
+    background-color: #dc3545; /* Red for restart/danger */
+}
+
+#restart-game-btn:hover {
+    background-color: #c82333;
+}
+
+/* Game Info */
+.game-info {
+    margin-bottom: 20px;
+    font-size: 1.1em;
+}
+
+#game-message {
+    font-weight: bold;
+    color: #e00; /* Red for win/loss messages */
+    margin-top: 10px;
+}
+
+/* Game Board */
+.game-board {
     display: grid;
+    /* 5 columns, each taking up equal space */
     grid-template-columns: repeat(5, 1fr);
-    gap: 5px;
-    background: #e1bee7;
-    padding: 5px;
-    border-radius: 12px;
-    border: 3px solid #9c27b0;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    /* Set max width to make cells square and maintain aspect ratio */
+    max-width: 400px; /* Adjust as needed for desktop */
+    width: 100%; /* Take full width of parent up to max-width */
+    margin: 0 auto; /* Center the board */
+    border: 2px solid #333;
+    gap: 2px; /* Small gap between cells */
+    background-color: #333; /* Color for the gaps */
 }
 
+/* Individual Cells */
 .cell {
-    aspect-ratio: 1;
-    background: white;
-    border-radius: 8px;
+    width: 100%; /* Take full width of its grid column */
+    /* Use padding-bottom trick for square cells based on width */
+    padding-bottom: 100%; /* Makes height equal to width */
+    background-color: #eee;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 2rem;
+    font-size: 2.5em; /* Large font for X/O */
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
+    user-select: none; /* Prevent text selection */
+    transition: background-color 0.1s ease;
 }
 
-.cell.x {
-    color: #7b1fa2;
+.cell:hover {
+    background-color: #ddd;
 }
 
-.cell.o {
-    color: #e91e63;
+.cell.X {
+    color: #007bff; /* Blue for X */
 }
 
-.cell:active {
-    transform: scale(0.95);
+.cell.O {
+    color: #4CAF50; /* Green for O */
 }
 
-/* Animation for moves */
-@keyframes popIn {
-    0% { transform: scale(0.8); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .game-container {
+        padding: 15px;
+        margin: 10px;
+    }
+
+    h1 {
+        font-size: 1.8em;
+    }
+
+    .option-group select {
+        width: 90%;
+    }
+
+    button {
+        padding: 10px 20px;
+        font-size: 0.9em;
+    }
+
+    .game-info {
+        font-size: 1em;
+    }
+
+    .game-board {
+        max-width: 300px; /* Smaller board for mobile */
+    }
+
+    .cell {
+        font-size: 2em; /* Smaller font for mobile cells */
+    }
 }
 
-.cell.x, .cell.o {
-    animation: popIn 0.2s ease-out forwards;
+@media (max-width: 480px) {
+    .game-container {
+        padding: 10px;
+        margin: 5px;
+    }
+
+    h1 {
+        font-size: 1.5em;
+    }
+
+    .option-group select {
+        width: 95%;
+    }
+
+    button {
+        padding: 8px 15px;
+        font-size: 0.8em;
+    }
+
+    .game-board {
+        max-width: 280px; /* Even smaller for very small screens */
+    }
+
+    .cell {
+        font-size: 1.8em;
+    }
 }
