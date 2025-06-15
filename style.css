@@ -9,6 +9,7 @@ body {
     background-color: #f0f0f0;
     color: #333;
     box-sizing: border-box; /* Include padding and border in element's total width and height */
+    overflow-y: auto; /* Allow scrolling if content is too tall, but aim to fit */
 }
 
 /* Game Container */
@@ -18,15 +19,16 @@ body {
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     text-align: center;
-    width: 100%;
-    max-width: 600px; /* Max width for desktop */
-    margin: 20px; /* Add some margin for smaller screens */
+    width: 90%; /* Take 90% of viewport width on small screens */
+    max-width: 500px; /* Max width for desktop to prevent it from getting too big */
+    margin: 20px auto; /* Auto margin centers it horizontally, 20px top/bottom margin */
     box-sizing: border-box;
 }
 
 h1 {
     color: #4CAF50; /* A pleasant green */
     margin-bottom: 20px;
+    font-size: 2em; /* Default font size */
 }
 
 /* Game Sections (Setup & Area) */
@@ -100,12 +102,13 @@ button:hover {
 /* Game Board */
 .game-board {
     display: grid;
-    /* 5 columns, each taking up equal space */
     grid-template-columns: repeat(5, 1fr);
-    /* Set max width to make cells square and maintain aspect ratio */
-    max-width: 400px; /* Adjust as needed for desktop */
-    width: 100%; /* Take full width of parent up to max-width */
-    margin: 0 auto; /* Center the board */
+    /* Use vw for a board size that scales with viewport, but don't let it get too large */
+    width: 80vw; /* Take 80% of viewport width */
+    max-width: 450px; /* Max width for desktop */
+    height: 80vw; /* Make height equal to width for square board */
+    max-height: 450px; /* Max height for desktop */
+    margin: 20px auto; /* Center the board */
     border: 2px solid #333;
     gap: 2px; /* Small gap between cells */
     background-color: #333; /* Color for the gaps */
@@ -114,13 +117,13 @@ button:hover {
 /* Individual Cells */
 .cell {
     width: 100%; /* Take full width of its grid column */
-    /* Use padding-bottom trick for square cells based on width */
-    padding-bottom: 100%; /* Makes height equal to width */
+    height: 100%; /* Take full height of its grid row */
     background-color: #eee;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 2.5em; /* Large font for X/O */
+    /* Use a fluid font size relative to the board or viewport */
+    font-size: 5vw; /* Start with 5vw, will adjust for larger screens */
     font-weight: bold;
     cursor: pointer;
     user-select: none; /* Prevent text selection */
@@ -139,19 +142,38 @@ button:hover {
     color: #4CAF50; /* Green for O */
 }
 
+/* Winning Cell Highlight */
+.cell.win {
+    background-color: #FFD700; /* Gold/Yellow for highlight */
+    animation: flashWin 0.8s infinite alternate; /* Simple flash animation */
+}
+
+@keyframes flashWin {
+    from { background-color: #FFD700; }
+    to { background-color: #FFECB3; } /* Lighter gold */
+}
+
+
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (min-width: 600px) {
+    /* Adjust font size for larger screens when 5vw might become too big */
+    .cell {
+        font-size: 40px; /* Fixed font size on larger screens */
+    }
+}
+
+@media (max-width: 480px) {
     .game-container {
         padding: 15px;
-        margin: 10px;
+        margin: 10px auto;
     }
 
     h1 {
-        font-size: 1.8em;
+        font-size: 1.6em;
     }
 
     .option-group select {
-        width: 90%;
+        width: 95%;
     }
 
     button {
@@ -160,42 +182,15 @@ button:hover {
     }
 
     .game-info {
-        font-size: 1em;
+        font-size: 0.9em;
     }
 
     .game-board {
-        max-width: 300px; /* Smaller board for mobile */
+        width: 90vw; /* Take more width on very small screens */
+        height: 90vw;
     }
 
     .cell {
-        font-size: 2em; /* Smaller font for mobile cells */
-    }
-}
-
-@media (max-width: 480px) {
-    .game-container {
-        padding: 10px;
-        margin: 5px;
-    }
-
-    h1 {
-        font-size: 1.5em;
-    }
-
-    .option-group select {
-        width: 95%;
-    }
-
-    button {
-        padding: 8px 15px;
-        font-size: 0.8em;
-    }
-
-    .game-board {
-        max-width: 280px; /* Even smaller for very small screens */
-    }
-
-    .cell {
-        font-size: 1.8em;
+        font-size: 7vw; /* Adjust font size relative to even smaller viewport */
     }
 }
