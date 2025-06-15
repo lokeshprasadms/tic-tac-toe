@@ -2,84 +2,81 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', sans-serif;
-  background: #111827;
-  color: #f9fafb;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  justify-content: start;
   min-height: 100vh;
+  background-color: #121212;
+  color: white;
 }
 
-.game-container {
+#game-container {
   width: 100%;
   max-width: 420px;
-  padding: 1rem;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   box-sizing: border-box;
-  text-align: center;
 }
 
-h1 {
-  margin-bottom: 1rem;
-  font-size: 1.5rem;
-}
-
-.settings {
-  margin-bottom: 1rem;
-}
-
-#difficulty {
-  padding: 0.4rem;
-  border-radius: 6px;
-  border: none;
-  font-size: 1rem;
-}
-
-.board {
+#board {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
-  margin: 0 auto;
+  grid-gap: 4px;
   width: 100%;
-  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  background-color: #222;
+  border: 2px solid #444;
+  border-radius: 10px;
 }
 
-.board div {
-  background: #1f2937;
-  aspect-ratio: 1/1;
-  font-size: 1.8rem;
+.cell {
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  background-color: #333;
+  font-size: clamp(16px, 4vw, 32px);
+  cursor: pointer;
   border-radius: 4px;
-  cursor: pointer;
   user-select: none;
-  transition: background 0.2s;
+  transition: background-color 0.2s ease;
 }
 
-.board div:hover {
-  background: #374151;
+.cell:hover {
+  background-color: #444;
 }
 
-.status {
-  margin-top: 1rem;
-  font-weight: bold;
-  min-height: 24px;
+#controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
 }
 
-.footer {
-  margin-top: 1rem;
-}
-
-#restart-btn {
-  padding: 0.6rem 1.2rem;
-  background: #10b981;
+select, button {
+  padding: 8px;
+  font-size: 16px;
+  border-radius: 5px;
   border: none;
+  width: 100%;
+  max-width: 200px;
+  background-color: #1e1e1e;
   color: white;
-  font-size: 1rem;
-  border-radius: 6px;
   cursor: pointer;
+  outline: none;
 }
 
-#restart-btn:hover {
-  background: #059669;
+button:hover, select:hover {
+  background-color: #333;
+}
+
+#status-message {
+  font-size: 18px;
+  text-align: center;
+  padding-top: 5px;
+  min-height: 24px;
+  color: #90ee90;
 }
