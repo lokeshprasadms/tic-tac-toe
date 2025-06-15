@@ -155,6 +155,7 @@ function checkWin(player) {
     ];
 
     for (let r = 0; r < BOARD_SIZE; r++) {
+        // CORRECTED LINE: Removed extra semicolon 'c;'
         for (let c = 0; c < BOARD_SIZE; c++) {
             if (board[r][c] === player) {
                 for (const [dr, dc] of directions) {
