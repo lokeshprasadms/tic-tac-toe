@@ -1,12 +1,16 @@
-// Global Game Settings
+// Global Settings
 const boardSize = 5;
-const winLength = 4; // win condition: 4 in a row
+const winLength = 4; // need 4 in a row to win
 let board = [];
 let gameOver = false;
 let playerSymbol;
 let aiSymbol;
 let difficulty;
-const maxMinimaxDepth = 3; // depth limit for hard mode
+const maxMinimaxDepth = 3; // Depth limit for minimax (hard mode)
+
+// Score Tracking
+let playerScore = 0;
+let aiScore = 0;
 
 // DOM Elements
 const settingsSection = document.getElementById("settings");
@@ -15,11 +19,16 @@ const boardDiv = document.getElementById("board");
 const statusHeader = document.getElementById("status");
 const restartBtn = document.getElementById("restart");
 const difficultySelect = document.getElementById("difficulty");
-const chooseXBtn = document.getElementById("choose-x");
-const chooseOBtn = document.getElementById("choose-o");
+const startGameBtn = document.getElementById("startGame");
+const symbolBtns = document.querySelectorAll(".symbol-btn");
 const playerSymbolSpan = document.getElementById("player-symbol");
+const playerScoreSpan = document.getElementById("player-score");
+const aiScoreSpan = document.getElementById("ai-score");
 
-// Initialize board array for every new game
+// Variable to hold symbol selection before game starts
+let selectedSymbol = null;
+
+// Initialize board array
 function initBoard() {
   board = [];
   for (let i = 0; i < boardSize; i++) {
@@ -27,7 +36,7 @@ function initBoard() {
   }
 }
 
-// Render board UI grid cells based on board array
+// Render board UI
 function renderBoard() {
   boardDiv.innerHTML = "";
   for (let i = 0; i < boardSize; i++) {
@@ -43,50 +52,42 @@ function renderBoard() {
   }
 }
 
-// Handle human player's move
+// Handle player's move
 function handleCellClick(e) {
   if (gameOver) return;
   const row = parseInt(e.target.dataset.row);
   const col = parseInt(e.target.dataset.col);
+  if (board[row][col] !== '') return;
   
-  if (board[row][col] !== '') return; // Ignore occupied cell
   board[row][col] = playerSymbol;
   renderBoard();
   
   if (checkWin(board, playerSymbol)) {
-    finishGame(`You win!`);
+    finishGame("Player");
     return;
   }
   if (isBoardFull(board)) {
-    finishGame("It's a tie!");
+    finishGame("Tie");
     return;
   }
-
+  
   statusHeader.textContent = `Computer's turn...`;
-  // Delay AI move for smoother UI transition
   setTimeout(() => {
     aiMove();
     renderBoard();
     if (checkWin(board, aiSymbol)) {
-      finishGame(`Computer wins!`);
+      finishGame("AI");
       return;
     }
     if (isBoardFull(board)) {
-      finishGame("It's a tie!");
+      finishGame("Tie");
       return;
     }
     statusHeader.textContent = `Your turn (${playerSymbol})`;
   }, 200);
 }
 
-// Finish game and display outcome message, show restart button
-function finishGame(message) {
-  gameOver = true;
-  statusHeader.textContent = message;
-  restartBtn.classList.remove("hidden");
-}
-
-// Check if board is completely filled
+// Check if board is full
 function isBoardFull(b) {
   for (let i = 0; i < boardSize; i++) {
     for (let j = 0; j < boardSize; j++) {
@@ -96,9 +97,9 @@ function isBoardFull(b) {
   return true;
 }
 
-// Check board for a win condition for specific symbol
+// Check winning condition for a symbol
 function checkWin(b, sym) {
-  // Check rows for winLength in a row
+  // Check rows
   for (let i = 0; i < boardSize; i++) {
     for (let j = 0; j <= boardSize - winLength; j++) {
       let win = true;
@@ -111,7 +112,7 @@ function checkWin(b, sym) {
       if (win) return true;
     }
   }
-  // Check columns for winLength in a row
+  // Check columns
   for (let j = 0; j < boardSize; j++) {
     for (let i = 0; i <= boardSize - winLength; i++) {
       let win = true;
@@ -124,7 +125,7 @@ function checkWin(b, sym) {
       if (win) return true;
     }
   }
-  // Check diagonals (top-left to bottom-right)
+  // Check diagonal (top-left to bottom-right)
   for (let i = 0; i <= boardSize - winLength; i++) {
     for (let j = 0; j <= boardSize - winLength; j++) {
       let win = true;
@@ -137,7 +138,7 @@ function checkWin(b, sym) {
       if (win) return true;
     }
   }
-  // Check diagonals (top-right to bottom-left)
+  // Check diagonal (top-right to bottom-left)
   for (let i = 0; i <= boardSize - winLength; i++) {
     for (let j = winLength - 1; j < boardSize; j++) {
       let win = true;
@@ -153,7 +154,7 @@ function checkWin(b, sym) {
   return false;
 }
 
-// AI makes a move based on selected difficulty
+// AI Move: chooses strategy based on difficulty selection
 function aiMove() {
   if (difficulty === "easy") {
     aiRandomMove();
@@ -169,7 +170,7 @@ function aiMove() {
   }
 }
 
-// Easy mode: randomly choose an empty cell
+// AI Easy: Random move
 function aiRandomMove() {
   const empties = [];
   for (let i = 0; i < boardSize; i++) {
@@ -177,15 +178,15 @@ function aiRandomMove() {
       if (board[i][j] === '') empties.push({ row: i, col: j });
     }
   }
-  if (empties.length) {
+  if (empties.length > 0) {
     const choice = empties[Math.floor(Math.random() * empties.length)];
     board[choice.row][choice.col] = aiSymbol;
   }
 }
 
-// Medium mode: first try to win; then block player's win; else random move
+// AI Medium: Attempt win, then block player, then random
 function aiMediumMove() {
-  // Attempt immediate win
+  // Check for immediate win
   for (let i = 0; i < boardSize; i++) {
     for (let j = 0; j < boardSize; j++) {
       if (board[i][j] === '') {
@@ -210,11 +211,11 @@ function aiMediumMove() {
       }
     }
   }
-  // Else perform a random move
+  // Fall back to a random move
   aiRandomMove();
 }
 
-// Hard mode using minimax decision with depth limit and alpha-beta pruning
+// AI Hard: Minimax with Alpha-Beta pruning
 function minimaxDecision() {
   let bestVal = -Infinity;
   let bestMove = null;
@@ -272,22 +273,45 @@ function minimax(b, depth, isMaximizing, alpha, beta) {
   }
 }
 
-// Start a new game using selected options
+// Called when game ends; outcome can be "Player", "AI", or "Tie"
+function finishGame(winner) {
+  gameOver = true;
+  if (winner === "Player") {
+    statusHeader.textContent = "You win!";
+    playerScore++;
+  } else if (winner === "AI") {
+    statusHeader.textContent = "Computer wins!";
+    aiScore++;
+  } else {
+    statusHeader.textContent = "It's a tie!";
+  }
+  updateScoreboard();
+  restartBtn.classList.remove("hidden");
+}
+
+// Update scoreboard display
+function updateScoreboard() {
+  playerScoreSpan.textContent = `Player: ${playerScore}`;
+  aiScoreSpan.textContent = `AI: ${aiScore}`;
+}
+
+// Start game using selected options
 function startGame() {
   difficulty = difficultySelect.value;
   initBoard();
   gameOver = false;
-  // Display player's symbol in header
+  // Display chosen symbol in header
   playerSymbolSpan.textContent = playerSymbol;
+  statusHeader.textContent = `Your turn (${playerSymbol})`;
   
-  // Hide settings and show game board
+  // Hide settings, show game section & hide restart button
   settingsSection.classList.add("hidden");
   gameSection.classList.remove("hidden");
   restartBtn.classList.add("hidden");
-  statusHeader.textContent = `Your turn (${playerSymbol})`;
+  
   renderBoard();
   
-  // If player chose "O", computer (playing as X) goes first
+  // If player is O, computer starts
   if (playerSymbol !== "X") {
     statusHeader.textContent = "Computer's turn...";
     setTimeout(() => {
@@ -298,21 +322,32 @@ function startGame() {
   }
 }
 
-// Event Listeners for symbol selection
-chooseXBtn.addEventListener("click", () => {
-  playerSymbol = "X";
-  aiSymbol = "O";
-  startGame();
+// Symbol selection: update active state visually and track the selection
+symbolBtns.forEach(btn => {
+  btn.addEventListener("click", (e) => {
+    selectedSymbol = e.target.dataset.symbol;
+    symbolBtns.forEach(b => b.classList.remove("active"));
+    e.target.classList.add("active");
+  });
 });
-chooseOBtn.addEventListener("click", () => {
-  playerSymbol = "O";
-  aiSymbol = "X";
+
+// Start Game button listener; ensures a symbol was chosen
+startGameBtn.addEventListener("click", () => {
+  if (!selectedSymbol) {
+    alert("Please select your symbol (X or O) before starting.");
+    return;
+  }
+  playerSymbol = selectedSymbol;
+  aiSymbol = playerSymbol === "X" ? "O" : "X";
   startGame();
 });
 
-// Restart functionality: resets view back to options
+// Restart Game button listener: show options again but keep scoreboard
 restartBtn.addEventListener("click", () => {
+  // Reset board state but keep scores
+  initBoard();
   settingsSection.classList.remove("hidden");
   gameSection.classList.add("hidden");
+  selectedSymbol = null;
+  symbolBtns.forEach(b => b.classList.remove("active"));
 });
-

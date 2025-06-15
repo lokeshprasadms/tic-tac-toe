@@ -8,24 +8,32 @@
 </head>
 <body>
   <div id="game-container">
+    <!-- Settings Section -->
     <section id="settings">
       <h1>5x5 Tic Tac Toe</h1>
       <div class="option">
         <label for="difficulty">Select AI Difficulty:</label>
         <select id="difficulty">
-          <option value="easy" selected>Easy</option>
-          <option value="medium">Medium</option>
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
           <option value="hard">Hard</option>
         </select>
       </div>
       <div class="option">
         <p>Select Your Symbol:</p>
-        <button class="symbol-btn" id="choose-x">X</button>
-        <button class="symbol-btn" id="choose-o">O</button>
+        <button class="symbol-btn" data-symbol="X">X</button>
+        <button class="symbol-btn" data-symbol="O">O</button>
       </div>
+      <button id="startGame" class="action-btn">Start Game</button>
     </section>
+    
+    <!-- Game Section -->
     <section id="game" class="hidden">
       <header id="status">Your turn (<span id="player-symbol"></span>)</header>
+      <div id="scoreboard">
+        <span id="player-score">Player: 0</span>
+        <span id="ai-score">AI: 0</span>
+      </div>
       <div id="board"></div>
       <button class="action-btn hidden" id="restart">Restart Game</button>
     </section>
@@ -33,4 +41,3 @@
   <script src="script.js"></script>
 </body>
 </html>
-

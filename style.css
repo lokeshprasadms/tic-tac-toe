@@ -1,132 +1,201 @@
-/* Reset & Global Styles */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
+/* Basic Reset & Body Styling */
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  color: #fff;
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f0f0;
+    color: #333;
+    box-sizing: border-box; /* Include padding and border in element's total width and height */
 }
 
 /* Game Container */
-#game-container {
-  background-color: rgba(0, 0, 0, 0.7);
-  border-radius: 12px;
-  padding: 20px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+.game-container {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 100%;
+    max-width: 600px; /* Max width for desktop */
+    margin: 20px; /* Add some margin for smaller screens */
+    box-sizing: border-box;
 }
 
-/* Settings Section */
-#settings {
-  text-align: center;
-  margin-bottom: 20px;
+h1 {
+    color: #4CAF50; /* A pleasant green */
+    margin-bottom: 20px;
 }
 
-#settings h1 {
-  margin-bottom: 15px;
-  font-size: 2em;
-  font-weight: 600;
+/* Game Sections (Setup & Area) */
+.game-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
 }
 
-.option {
-  margin-bottom: 15px;
+.game-section.hidden {
+    display: none;
 }
 
-.option label,
-.option p {
-  font-size: 1.1em;
-  margin-bottom: 8px;
-  display: block;
+/* Game Setup Options */
+.option-group {
+    margin-bottom: 15px;
 }
 
-.symbol-btn,
-.action-btn {
-  padding: 10px 20px;
-  margin: 5px;
-  background: #fdbb2d;
-  border: none;
-  border-radius: 8px;
-  font-size: 1em;
-  cursor: pointer;
-  transition: background 0.3s ease;
-  color: #000;
+.option-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
 }
 
-.symbol-btn:hover,
-.action-btn:hover {
-  background: #e0a800;
+.option-group select {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    width: 80%;
+    max-width: 200px;
+    box-sizing: border-box;
 }
 
-select {
-  padding: 8px;
-  border-radius: 6px;
-  border: none;
-  font-size: 1em;
+/* Buttons */
+button {
+    background-color: #007bff; /* Blue for primary actions */
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-top: 15px;
+    transition: background-color 0.2s ease;
 }
 
-/* Game Section */
-#game {
-  text-align: center;
+button:hover {
+    background-color: #0056b3;
 }
 
-#status {
-  font-size: 1.2em;
-  margin-bottom: 15px;
+#restart-game-btn {
+    background-color: #dc3545; /* Red for restart/danger */
 }
 
-/* Board Styles */
-#board {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  margin-bottom: 20px;
+#restart-game-btn:hover {
+    background-color: #c82333;
 }
 
+/* Game Info */
+.game-info {
+    margin-bottom: 20px;
+    font-size: 1.1em;
+}
+
+#game-message {
+    font-weight: bold;
+    color: #e00; /* Red for win/loss messages */
+    margin-top: 10px;
+}
+
+/* Game Board */
+.game-board {
+    display: grid;
+    /* 5 columns, each taking up equal space */
+    grid-template-columns: repeat(5, 1fr);
+    /* Set max width to make cells square and maintain aspect ratio */
+    max-width: 400px; /* Adjust as needed for desktop */
+    width: 100%; /* Take full width of parent up to max-width */
+    margin: 0 auto; /* Center the board */
+    border: 2px solid #333;
+    gap: 2px; /* Small gap between cells */
+    background-color: #333; /* Color for the gaps */
+}
+
+/* Individual Cells */
 .cell {
-  background-color: #fff;
-  color: #000;
-  font-size: 1.8em;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 6px;
-  height: 60px;
-  cursor: pointer;
-  transition: transform 0.1s ease, background 0.3s ease;
+    width: 100%; /* Take full width of its grid column */
+    /* Use padding-bottom trick for square cells based on width */
+    padding-bottom: 100%; /* Makes height equal to width */
+    background-color: #eee;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2.5em; /* Large font for X/O */
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none; /* Prevent text selection */
+    transition: background-color 0.1s ease;
 }
 
 .cell:hover {
-  background-color: #e0e0e0;
-  transform: scale(1.05);
+    background-color: #ddd;
 }
 
-/* Hidden class for toggling sections */
-.hidden {
-  display: none;
+.cell.X {
+    color: #007bff; /* Blue for X */
+}
+
+.cell.O {
+    color: #4CAF50; /* Green for O */
 }
 
 /* Responsive adjustments */
-@media (max-width: 480px) {
-  #game-container {
-    padding: 15px;
-  }
-  .cell {
-    height: 50px;
-    font-size: 1.5em;
-  }
-  .symbol-btn,
-  .action-btn {
-    padding: 8px 16px;
-    font-size: 0.9em;
-  }
+@media (max-width: 768px) {
+    .game-container {
+        padding: 15px;
+        margin: 10px;
+    }
+
+    h1 {
+        font-size: 1.8em;
+    }
+
+    .option-group select {
+        width: 90%;
+    }
+
+    button {
+        padding: 10px 20px;
+        font-size: 0.9em;
+    }
+
+    .game-info {
+        font-size: 1em;
+    }
+
+    .game-board {
+        max-width: 300px; /* Smaller board for mobile */
+    }
+
+    .cell {
+        font-size: 2em; /* Smaller font for mobile cells */
+    }
 }
 
+@media (max-width: 480px) {
+    .game-container {
+        padding: 10px;
+        margin: 5px;
+    }
+
+    h1 {
+        font-size: 1.5em;
+    }
+
+    .option-group select {
+        width: 95%;
+    }
+
+    button {
+        padding: 8px 15px;
+        font-size: 0.8em;
+    }
+
+    .game-board {
+        max-width: 280px; /* Even smaller for very small screens */
+    }
+
+    .cell {
+        font-size: 1.8em;
+    }
+}
