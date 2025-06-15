@@ -1,454 +1,318 @@
-// --- DOM Elements ---
-const gameSetup = document.getElementById('game-setup');
-const gameArea = document.getElementById('game-area');
-const difficultySelect = document.getElementById('difficulty');
-const playerChoiceSelect = document.getElementById('player-choice');
-const startGameBtn = document.getElementById('start-game-btn');
-const gameBoard = document.getElementById('game-board');
-const currentTurnDisplay = document.getElementById('current-turn');
-const gameMessage = document.getElementById('game-message');
-const restartGameBtn = document.getElementById('restart-game-btn');
-
-// --- Game State Variables ---
+// Global Game Settings
+const boardSize = 5;
+const winLength = 4; // win condition: 4 in a row
 let board = [];
-const BOARD_SIZE = 5;
-const WIN_CONDITION = 4; // 4 in a row for a 5x5 grid
-let currentPlayer = 'X';
-let humanPlayer = 'X'; // 'X' or 'O'
-let aiPlayer = 'O'; // 'X' or 'O'
-let gameActive = false;
-let difficulty = 'easy'; // easy, medium, hard
-let winningLine = []; // Stores the coordinates of the winning cells for highlighting
+let gameOver = false;
+let playerSymbol;
+let aiSymbol;
+let difficulty;
+const maxMinimaxDepth = 3; // depth limit for hard mode
 
-// --- Event Listeners ---
-startGameBtn.addEventListener('click', startGame);
-restartGameBtn.addEventListener('click', resetGame);
+// DOM Elements
+const settingsSection = document.getElementById("settings");
+const gameSection = document.getElementById("game");
+const boardDiv = document.getElementById("board");
+const statusHeader = document.getElementById("status");
+const restartBtn = document.getElementById("restart");
+const difficultySelect = document.getElementById("difficulty");
+const chooseXBtn = document.getElementById("choose-x");
+const chooseOBtn = document.getElementById("choose-o");
+const playerSymbolSpan = document.getElementById("player-symbol");
 
-// --- Functions ---
+// Initialize board array for every new game
+function initBoard() {
+  board = [];
+  for (let i = 0; i < boardSize; i++) {
+    board.push(new Array(boardSize).fill(''));
+  }
+}
 
-/**
- * Initializes the game board visually and logically.
- * Clears any previous game state and prepares for a new game.
- */
-function initializeBoard() {
-    gameBoard.innerHTML = ''; // Clear existing cells from the DOM
-    board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill('')); // Reset logical board
-    winningLine = []; // Clear winning line from previous game
-    clearWinningHighlight(); // Ensure no highlights from previous game cells
+// Render board UI grid cells based on board array
+function renderBoard() {
+  boardDiv.innerHTML = "";
+  for (let i = 0; i < boardSize; i++) {
+    for (let j = 0; j < boardSize; j++) {
+      const cell = document.createElement("div");
+      cell.classList.add("cell");
+      cell.dataset.row = i;
+      cell.dataset.col = j;
+      cell.textContent = board[i][j];
+      cell.addEventListener("click", handleCellClick);
+      boardDiv.appendChild(cell);
+    }
+  }
+}
 
-    for (let i = 0; i < BOARD_SIZE; i++) {
-        for (let j = 0; j < BOARD_SIZE; j++) {
-            const cell = document.createElement('div');
-            cell.classList.add('cell');
-            cell.dataset.row = i; // Store row index
-            cell.dataset.col = j; // Store column index
-            cell.addEventListener('click', handleCellClick);
-            gameBoard.appendChild(cell);
+// Handle human player's move
+function handleCellClick(e) {
+  if (gameOver) return;
+  const row = parseInt(e.target.dataset.row);
+  const col = parseInt(e.target.dataset.col);
+  
+  if (board[row][col] !== '') return; // Ignore occupied cell
+  board[row][col] = playerSymbol;
+  renderBoard();
+  
+  if (checkWin(board, playerSymbol)) {
+    finishGame(`You win!`);
+    return;
+  }
+  if (isBoardFull(board)) {
+    finishGame("It's a tie!");
+    return;
+  }
+
+  statusHeader.textContent = `Computer's turn...`;
+  // Delay AI move for smoother UI transition
+  setTimeout(() => {
+    aiMove();
+    renderBoard();
+    if (checkWin(board, aiSymbol)) {
+      finishGame(`Computer wins!`);
+      return;
+    }
+    if (isBoardFull(board)) {
+      finishGame("It's a tie!");
+      return;
+    }
+    statusHeader.textContent = `Your turn (${playerSymbol})`;
+  }, 200);
+}
+
+// Finish game and display outcome message, show restart button
+function finishGame(message) {
+  gameOver = true;
+  statusHeader.textContent = message;
+  restartBtn.classList.remove("hidden");
+}
+
+// Check if board is completely filled
+function isBoardFull(b) {
+  for (let i = 0; i < boardSize; i++) {
+    for (let j = 0; j < boardSize; j++) {
+      if (b[i][j] === '') return false;
+    }
+  }
+  return true;
+}
+
+// Check board for a win condition for specific symbol
+function checkWin(b, sym) {
+  // Check rows for winLength in a row
+  for (let i = 0; i < boardSize; i++) {
+    for (let j = 0; j <= boardSize - winLength; j++) {
+      let win = true;
+      for (let k = 0; k < winLength; k++) {
+        if (b[i][j + k] !== sym) {
+          win = false;
+          break;
         }
+      }
+      if (win) return true;
     }
-}
-
-/**
- * Starts the game based on user selections from the setup screen.
- */
-function startGame() {
-    difficulty = difficultySelect.value;
-    humanPlayer = playerChoiceSelect.value;
-    aiPlayer = (humanPlayer === 'X') ? 'O' : 'X';
-    currentPlayer = 'X'; // 'X' always starts the game
-
-    initializeBoard(); // Setup the new board
-    gameMessage.textContent = ''; // Clear any previous game messages
-    updateTurnDisplay(); // Display whose turn it is
-
-    gameSetup.classList.add('hidden'); // Hide the setup screen
-    gameArea.classList.remove('hidden'); // Show the game board
-    gameActive = true; // Set game state to active
-
-    // If AI is the first player, make its move
-    if (currentPlayer === aiPlayer) {
-        setTimeout(makeAIMove, 500); // Small delay for better UX
-    }
-}
-
-/**
- * Resets the game to its initial setup state, allowing new game options.
- */
-function resetGame() {
-    gameActive = false; // Stop current game
-    gameSetup.classList.remove('hidden'); // Show setup screen
-    gameArea.classList.add('hidden'); // Hide game board
-    gameMessage.textContent = ''; // Clear game message
-    winningLine = []; // Clear winning line
-    clearWinningHighlight(); // Remove any highlights
-    // initializeBoard will be called by startGame when a new game starts
-}
-
-/**
- * Handles a click event on a game board cell.
- * @param {Event} event - The click event object.
- */
-function handleCellClick(event) {
-    if (!gameActive) return; // Do nothing if game is not active
-
-    const row = parseInt(event.target.dataset.row); // Get row from data attribute
-    const col = parseInt(event.target.dataset.col); // Get column from data attribute
-
-    // If cell is already taken or it's AI's turn, do nothing
-    if (board[row][col] !== '' || currentPlayer === aiPlayer) {
-        return;
-    }
-
-    makeMove(row, col, humanPlayer); // Execute the human player's move
-}
-
-/**
- * Executes a move on the game board for a given player.
- * Updates the board state, checks for win/draw, and switches turns.
- * @param {number} row - The row index of the move.
- * @param {number} col - The column index of the move.
- * @param {string} player - The player making the move ('X' or 'O').
- */
-function makeMove(row, col, player) {
-    if (board[row][col] === '') { // Ensure the cell is empty
-        board[row][col] = player; // Update logical board
-        const cell = gameBoard.children[row * BOARD_SIZE + col]; // Get visual cell element
-        cell.textContent = player; // Display player's mark
-        cell.classList.add(player); // Add class for styling (e.g., color)
-
-        const winResult = checkWin(player); // Check if this move resulted in a win
-        if (winResult) {
-            winningLine = winResult; // Store the winning line coordinates
-            endGame(player); // End game with player as winner
-        } else if (checkDraw()) {
-            endGame('draw'); // End game as a draw
-        } else {
-            currentPlayer = (currentPlayer === 'X') ? 'O' : 'X'; // Switch turn
-            updateTurnDisplay(); // Update turn display
-            // If it's AI's turn and game is still active, make AI move
-            if (gameActive && currentPlayer === aiPlayer) {
-                setTimeout(makeAIMove, 700); // AI's turn after a slight delay for better UX
-            }
+  }
+  // Check columns for winLength in a row
+  for (let j = 0; j < boardSize; j++) {
+    for (let i = 0; i <= boardSize - winLength; i++) {
+      let win = true;
+      for (let k = 0; k < winLength; k++) {
+        if (b[i + k][j] !== sym) {
+          win = false;
+          break;
         }
+      }
+      if (win) return true;
     }
-}
-
-/**
- * Updates the display element to show the current player's turn.
- */
-function updateTurnDisplay() {
-    currentTurnDisplay.textContent = currentPlayer;
-    currentTurnDisplay.style.color = (currentPlayer === 'X') ? '#007bff' : '#4CAF50';
-}
-
-/**
- * Checks if the given player has achieved the winning condition (4 in a row, column, or diagonal).
- * @param {string} player - The player ('X' or 'O') to check for a win.
- * @returns {Array<object>|null} - An array of winning cell coordinates ({row, col}) if a win is found, null otherwise.
- */
-function checkWin(player) {
-    const directions = [
-        [0, 1],   // Horizontal
-        [1, 0],   // Vertical
-        [1, 1],   // Diagonal (top-left to bottom-right)
-        [1, -1]   // Diagonal (top-right to bottom-left)
-    ];
-
-    for (let r = 0; r < BOARD_SIZE; r++) {
-        // CORRECTED LINE: Removed extra semicolon 'c;'
-        for (let c = 0; c < BOARD_SIZE; c++) {
-            if (board[r][c] === player) {
-                for (const [dr, dc] of directions) {
-                    let count = 1;
-                    const currentLine = [{ row: r, col: c }]; // Start line with current cell
-
-                    for (let i = 1; i < WIN_CONDITION; i++) {
-                        const nr = r + dr * i; // Next row
-                        const nc = c + dc * i; // Next column
-
-                        // Check bounds and if the next cell belongs to the player
-                        if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr][nc] === player) {
-                            count++;
-                            currentLine.push({ row: nr, col: nc }); // Add to current line
-                        } else {
-                            break; // Sequence broken
-                        }
-                    }
-                    if (count >= WIN_CONDITION) {
-                        return currentLine; // Return the exact winning line
-                    }
-                }
-            }
+  }
+  // Check diagonals (top-left to bottom-right)
+  for (let i = 0; i <= boardSize - winLength; i++) {
+    for (let j = 0; j <= boardSize - winLength; j++) {
+      let win = true;
+      for (let k = 0; k < winLength; k++) {
+        if (b[i + k][j + k] !== sym) {
+          win = false;
+          break;
         }
+      }
+      if (win) return true;
     }
-    return null; // No win found
-}
-
-/**
- * Checks if the game board is full, indicating a potential draw.
- * @returns {boolean} - True if the board is full, false otherwise.
- */
-function checkDraw() {
-    for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
-            if (board[r][c] === '') {
-                return false; // Found an empty cell, not a draw yet
-            }
+  }
+  // Check diagonals (top-right to bottom-left)
+  for (let i = 0; i <= boardSize - winLength; i++) {
+    for (let j = winLength - 1; j < boardSize; j++) {
+      let win = true;
+      for (let k = 0; k < winLength; k++) {
+        if (b[i + k][j - k] !== sym) {
+          win = false;
+          break;
         }
+      }
+      if (win) return true;
     }
-    return true; // Board is full
+  }
+  return false;
 }
 
-/**
- * Ends the game, displaying the result message and highlighting winning cells if a win occurred.
- * @param {string} result - The result of the game ('X', 'O', or 'draw').
- */
-function endGame(result) {
-    gameActive = false; // Deactivate game to prevent further moves
-    if (result === 'draw') {
-        gameMessage.textContent = "It's a Draw!";
-        gameMessage.style.color = '#FFA500'; // Orange for draw
-    } else if (result === humanPlayer) {
-        gameMessage.textContent = "You Win!";
-        gameMessage.style.color = '#28a745'; // Green for win
-        highlightWinningCells(); // Highlight the cells that formed the win
-    } else { // AI Wins
-        gameMessage.textContent = "AI Wins!";
-        gameMessage.style.color = '#dc3545'; // Red for AI win
-        highlightWinningCells(); // Highlight the cells that formed the AI win
-    }
-}
-
-/**
- * Applies a visual highlight to the cells stored in `winningLine`.
- */
-function highlightWinningCells() {
-    winningLine.forEach(coord => {
-        // Calculate the flat index for the cell element
-        const cellIndex = coord.row * BOARD_SIZE + coord.col;
-        const cell = gameBoard.children[cellIndex];
-        if (cell) { // Ensure cell exists
-            cell.classList.add('win'); // Add the 'win' class for CSS styling
-        }
-    });
-}
-
-/**
- * Removes the winning highlight from all cells on the board.
- */
-function clearWinningHighlight() {
-    // Select all elements that have both 'cell' and 'win' classes
-    const cells = document.querySelectorAll('.cell.win');
-    cells.forEach(cell => {
-        cell.classList.remove('win'); // Remove the 'win' class
-    });
-}
-
-// --- AI Logic ---
-
-/**
- * Determines and executes the AI's move based on the selected difficulty level.
- */
-function makeAIMove() {
-    if (!gameActive) return;
-
-    let bestMove = null;
-
-    if (difficulty === 'easy') {
-        bestMove = getRandomEmptyCell();
-    } else if (difficulty === 'medium') {
-        bestMove = getMediumAIMove();
-    } else if (difficulty === 'hard') {
-        bestMove = getHardAIMove();
-    }
-
+// AI makes a move based on selected difficulty
+function aiMove() {
+  if (difficulty === "easy") {
+    aiRandomMove();
+  } else if (difficulty === "medium") {
+    aiMediumMove();
+  } else if (difficulty === "hard") {
+    const bestMove = minimaxDecision();
     if (bestMove) {
-        makeMove(bestMove.row, bestMove.col, aiPlayer);
+      board[bestMove.row][bestMove.col] = aiSymbol;
     } else {
-        // Fallback for unexpected scenarios (should ideally not happen if checkDraw works)
-        console.warn("AI couldn't find a move. Game might be a draw or an error occurred.");
+      aiRandomMove();
     }
+  }
 }
 
-/**
- * Finds a random empty cell for the 'Easy' AI difficulty.
- * @returns {object|null} - An object with row and col if an empty cell is found, null otherwise.
- */
-function getRandomEmptyCell() {
-    const emptyCells = [];
-    for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
-            if (board[r][c] === '') {
-                emptyCells.push({ row: r, col: c });
-            }
+// Easy mode: randomly choose an empty cell
+function aiRandomMove() {
+  const empties = [];
+  for (let i = 0; i < boardSize; i++) {
+    for (let j = 0; j < boardSize; j++) {
+      if (board[i][j] === '') empties.push({ row: i, col: j });
+    }
+  }
+  if (empties.length) {
+    const choice = empties[Math.floor(Math.random() * empties.length)];
+    board[choice.row][choice.col] = aiSymbol;
+  }
+}
+
+// Medium mode: first try to win; then block player's win; else random move
+function aiMediumMove() {
+  // Attempt immediate win
+  for (let i = 0; i < boardSize; i++) {
+    for (let j = 0; j < boardSize; j++) {
+      if (board[i][j] === '') {
+        board[i][j] = aiSymbol;
+        if (checkWin(board, aiSymbol)) {
+          return;
         }
+        board[i][j] = '';
+      }
     }
-    if (emptyCells.length > 0) {
-        const randomIndex = Math.floor(Math.random() * emptyCells.length);
-        return emptyCells[randomIndex];
-    }
-    return null;
-}
-
-/**
- * Implements the 'Medium' AI strategy:
- * 1. Win if possible.
- * 2. Block opponent's win.
- * 3. Take center cell.
- * 4. Take corner cells.
- * 5. Take random empty cell.
- * @returns {object|null} - The chosen move's coordinates or null.
- */
-function getMediumAIMove() {
-    // 1. Check for AI's immediate winning move
-    let move = findWinningMove(aiPlayer);
-    if (move) return move;
-
-    // 2. Block human's immediate winning move
-    move = findWinningMove(humanPlayer);
-    if (move) return move;
-
-    // 3. Take center cell (approximate for 5x5 - middle cell)
-    const centerRow = Math.floor(BOARD_SIZE / 2);
-    const centerCol = Math.floor(BOARD_SIZE / 2);
-    if (board[centerRow][centerCol] === '') {
-        return { row: centerRow, col: centerCol };
-    }
-
-    // 4. Take corner cells
-    const corners = [
-        { row: 0, col: 0 }, { row: 0, col: BOARD_SIZE - 1 },
-        { row: BOARD_SIZE - 1, col: 0 }, { row: BOARD_SIZE - 1, col: BOARD_SIZE - 1 }
-    ];
-    for (const corner of corners) {
-        if (board[corner.row][corner.col] === '') {
-            return corner;
+  }
+  // Block player's immediate win
+  for (let i = 0; i < boardSize; i++) {
+    for (let j = 0; j < boardSize; j++) {
+      if (board[i][j] === '') {
+        board[i][j] = playerSymbol;
+        if (checkWin(board, playerSymbol)) {
+          board[i][j] = aiSymbol;
+          return;
         }
+        board[i][j] = '';
+      }
     }
-
-    // 5. Fallback: Take any available random empty cell
-    return getRandomEmptyCell();
+  }
+  // Else perform a random move
+  aiRandomMove();
 }
 
-/**
- * Implements the 'Hard' AI strategy (heuristic-based for performance on 5x5):
- * 1. Win if possible.
- * 2. Block opponent's win.
- * 3. Create lines of 3 for AI.
- * 4. Block opponent's lines of 3.
- * 5. Create lines of 2 for AI.
- * 6. Block opponent's lines of 2.
- * 7. Fallback to medium strategy.
- * @returns {object|null} - The chosen move's coordinates or null.
- */
-function getHardAIMove() {
-    // 1. Check for AI's immediate winning move
-    let move = findWinningMove(aiPlayer);
-    if (move) return move;
-
-    // 2. Block human's immediate winning move
-    move = findWinningMove(humanPlayer);
-    if (move) return move;
-
-    // 3. Try to create a line of 3 for AI (targetLength 3)
-    move = findLineCreationMove(aiPlayer, 3);
-    if (move) return move;
-
-    // 4. Try to block a line of 3 for human (targetLength 3)
-    move = findLineCreationMove(humanPlayer, 3);
-    if (move) return move;
-
-    // 5. Try to create a line of 2 for AI (targetLength 2)
-    move = findLineCreationMove(aiPlayer, 2);
-    if (move) return move;
-
-    // 6. Try to block a line of 2 for human (targetLength 2)
-    move = findLineCreationMove(humanPlayer, 2);
-    if (move) return move;
-
-    // If no immediate threats or opportunities, fall back to medium strategy
-    return getMediumAIMove();
-}
-
-/**
- * Finds a hypothetical move that would lead to a win for the given player.
- * Temporarily makes a move to check for a win, then undoes it.
- * @param {string} player - The player ('X' or 'O') to check for a winning move.
- * @returns {object|null} - An object with row and col if a winning move is found, otherwise null.
- */
-function findWinningMove(player) {
-    for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
-            if (board[r][c] === '') { // Only consider empty cells
-                board[r][c] = player; // Temporarily make the move
-                if (checkWin(player)) { // Check if this temporary move leads to a win
-                    board[r][c] = ''; // Undo the move
-                    return { row: r, col: c }; // Return the winning move
-                }
-                board[r][c] = ''; // Undo the move
-            }
+// Hard mode using minimax decision with depth limit and alpha-beta pruning
+function minimaxDecision() {
+  let bestVal = -Infinity;
+  let bestMove = null;
+  for (let i = 0; i < boardSize; i++) {
+    for (let j = 0; j < boardSize; j++) {
+      if (board[i][j] === '') {
+        board[i][j] = aiSymbol;
+        const moveVal = minimax(board, 0, false, -Infinity, Infinity);
+        board[i][j] = '';
+        if (moveVal > bestVal) {
+          bestVal = moveVal;
+          bestMove = { row: i, col: j };
         }
+      }
     }
-    return null; // No winning move found
+  }
+  return bestMove;
 }
 
-/**
- * Finds a move that contributes to creating or blocking a line of a certain `targetLength`.
- * This is a heuristic to help the 'Hard' AI build or defend lines.
- * @param {string} player - The player ('X' or 'O') to check for.
- * @param {number} targetLength - The desired length of the line (e.g., 3 means finding a cell to make a line of 3).
- * @returns {object|null} - An object with row and col if such a move is found, otherwise null.
- */
-function findLineCreationMove(player, targetLength) {
-    const directions = [
-        [0, 1],   // Horizontal
-        [1, 0],   // Vertical
-        [1, 1],   // Diagonal (top-left to bottom-right)
-        [1, -1]   // Diagonal (top-right to bottom-left)
-    ];
+function minimax(b, depth, isMaximizing, alpha, beta) {
+  if (checkWin(b, aiSymbol)) return 10 - depth;
+  if (checkWin(b, playerSymbol)) return depth - 10;
+  if (isBoardFull(b) || depth === maxMinimaxDepth) return 0;
 
-    for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
-            if (board[r][c] === '') { // Only consider empty cells
-                board[r][c] = player; // Temporarily place the player's mark
-
-                for (const [dr, dc] of directions) {
-                    let consecutiveCount = 0;
-                    // Check in the forward direction from the current cell
-                    for (let i = 0; i < WIN_CONDITION; i++) {
-                        const nr = r + dr * i;
-                        const nc = c + dc * i;
-                        if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr][nc] === player) {
-                            consecutiveCount++;
-                        } else {
-                            break; // Stop if boundary or different player
-                        }
-                    }
-
-                    // Check in the backward direction from the current cell (excluding itself)
-                    for (let i = 1; i < WIN_CONDITION; i++) {
-                        const nr = r - dr * i;
-                        const nc = c - dc * i;
-                        if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr][nc] === player) {
-                            consecutiveCount++;
-                        } else {
-                            break; // Stop if boundary or different player
-                        }
-                    }
-
-                    // If placing here helps create a line of at least targetLength
-                    // (e.g., if targetLength is 3, means 3 consecutive marks are formed or extended)
-                    if (consecutiveCount >= targetLength) {
-                        board[r][c] = ''; // Undo the temporary move
-                        return { row: r, col: c }; // Return this promising move
-                    }
-                }
-                board[r][c] = ''; // Undo the temporary move after checking all directions
-            }
+  if (isMaximizing) {
+    let maxEval = -Infinity;
+    for (let i = 0; i < boardSize; i++) {
+      for (let j = 0; j < boardSize; j++) {
+        if (b[i][j] === '') {
+          b[i][j] = aiSymbol;
+          const evalValue = minimax(b, depth + 1, false, alpha, beta);
+          b[i][j] = '';
+          maxEval = Math.max(maxEval, evalValue);
+          alpha = Math.max(alpha, evalValue);
+          if (beta <= alpha) break;
         }
+      }
     }
-    return null; // No suitable move found
+    return maxEval;
+  } else {
+    let minEval = Infinity;
+    for (let i = 0; i < boardSize; i++) {
+      for (let j = 0; j < boardSize; j++) {
+        if (b[i][j] === '') {
+          b[i][j] = playerSymbol;
+          const evalValue = minimax(b, depth + 1, true, alpha, beta);
+          b[i][j] = '';
+          minEval = Math.min(minEval, evalValue);
+          beta = Math.min(beta, evalValue);
+          if (beta <= alpha) break;
+        }
+      }
+    }
+    return minEval;
+  }
 }
 
-// Initial board setup on page load
-initializeBoard();
+// Start a new game using selected options
+function startGame() {
+  difficulty = difficultySelect.value;
+  initBoard();
+  gameOver = false;
+  // Display player's symbol in header
+  playerSymbolSpan.textContent = playerSymbol;
+  
+  // Hide settings and show game board
+  settingsSection.classList.add("hidden");
+  gameSection.classList.remove("hidden");
+  restartBtn.classList.add("hidden");
+  statusHeader.textContent = `Your turn (${playerSymbol})`;
+  renderBoard();
+  
+  // If player chose "O", computer (playing as X) goes first
+  if (playerSymbol !== "X") {
+    statusHeader.textContent = "Computer's turn...";
+    setTimeout(() => {
+      aiMove();
+      renderBoard();
+      statusHeader.textContent = `Your turn (${playerSymbol})`;
+    }, 200);
+  }
+}
+
+// Event Listeners for symbol selection
+chooseXBtn.addEventListener("click", () => {
+  playerSymbol = "X";
+  aiSymbol = "O";
+  startGame();
+});
+chooseOBtn.addEventListener("click", () => {
+  playerSymbol = "O";
+  aiSymbol = "X";
+  startGame();
+});
+
+// Restart functionality: resets view back to options
+restartBtn.addEventListener("click", () => {
+  settingsSection.classList.remove("hidden");
+  gameSection.classList.add("hidden");
+});
+
