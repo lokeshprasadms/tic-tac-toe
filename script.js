@@ -94,109 +94,116 @@ document.addEventListener('DOMContentLoaded', () => {
     function makeAIMove() {
         if (gameOver) return;
         
-        let move;
-        
-        switch (difficulty) {
-            case 'easy':
-                move = getRandomMove();
-                break;
-            case 'medium':
-                move = getMediumMove();
-                break;
-            case 'hard':
-            default:
-                move = getBestMove();
-        }
-        
-        if (move) {
-            const { row, col } = move;
-            makeMove(row, col, aiSymbol);
+        // Small delay for better UX
+        setTimeout(() => {
+            let move;
             
-            if (checkWin(aiSymbol)) {
-                finishGame('AI');
-                return;
+            switch (difficulty) {
+                case 'easy':
+                    move = getRandomMove();
+                    break;
+                case 'medium':
+                    move = getMediumMove();
+                    break;
+                case 'hard':
+                default:
+                    move = getBestMove();
             }
             
-            if (isBoardFull()) {
-                finishGame('Tie');
-                return;
+            if (move) {
+                const { row, col } = move;
+                makeMove(row, col, aiSymbol);
+                
+                if (checkWin(aiSymbol)) {
+                    finishGame('AI');
+                    return;
+                }
+                
+                if (isBoardFull()) {
+                    finishGame('Tie');
+                    return;
+                }
+                
+                updateStatus(`Your turn (${playerSymbol})`);
             }
-            
-            updateStatus(`Your turn (${playerSymbol})`);
-        }
+        }, 300); // Slight delay for better UX
     }
     
     // Check for a win
     function checkWin(symbol) {
-        // Check rows, columns and diagonals
-        return checkLines(symbol) || checkLines(symbol, true) || checkDiagonals(symbol);
-    }
-    
-    // Check rows or columns for a win
-    function checkLines(symbol, checkColumns = false) {
+        // Reset winning cells
+        winningCells = [];
+        
+        // Check rows and columns
         for (let i = 0; i < BOARD_SIZE; i++) {
-            let count = 0;
-            for (let j = 0; j < BOARD_SIZE; j++) {
-                const cell = checkColumns ? board[j][i] : board[i][j];
-                if (cell === symbol) {
-                    count++;
-                    if (count === WIN_LENGTH) {
-                        // Save winning cells
-                        winningCells = [];
-                        for (let k = 0; k < WIN_LENGTH; k++) {
-                            const row = checkColumns ? i : i;
-                            const col = checkColumns ? j - k : j - k;
-                            winningCells.push({ row, col });
-                        }
-                        return true;
-                    }
-                } else {
-                    count = 0;
-                }
-            }
-        }
-        return false;
-    }
-    
-    // Check diagonals for a win
-    function checkDiagonals(symbol) {
-        // Check top-left to bottom-right
-        for (let i = 0; i <= BOARD_SIZE - WIN_LENGTH; i++) {
+            // Check rows
             for (let j = 0; j <= BOARD_SIZE - WIN_LENGTH; j++) {
                 let win = true;
+                const cells = [];
                 for (let k = 0; k < WIN_LENGTH; k++) {
-                    if (board[i + k][j + k] !== symbol) {
+                    if (board[i][j + k] !== symbol) {
                         win = false;
                         break;
                     }
+                    cells.push({ row: i, col: j + k });
                 }
                 if (win) {
-                    // Save winning cells
-                    winningCells = [];
-                    for (let k = 0; k < WIN_LENGTH; k++) {
-                        winningCells.push({ row: i + k, col: j + k });
+                    winningCells = cells;
+                    return true;
+                }
+            }
+            
+            // Check columns
+            for (let j = 0; j <= BOARD_SIZE - WIN_LENGTH; j++) {
+                let win = true;
+                const cells = [];
+                for (let k = 0; k < WIN_LENGTH; k++) {
+                    if (board[j + k][i] !== symbol) {
+                        win = false;
+                        break;
                     }
+                    cells.push({ row: j + k, col: i });
+                }
+                if (win) {
+                    winningCells = cells;
                     return true;
                 }
             }
         }
         
-        // Check top-right to bottom-left
+        // Check diagonals (top-left to bottom-right)
+        for (let i = 0; i <= BOARD_SIZE - WIN_LENGTH; i++) {
+            for (let j = 0; j <= BOARD_SIZE - WIN_LENGTH; j++) {
+                let win = true;
+                const cells = [];
+                for (let k = 0; k < WIN_LENGTH; k++) {
+                    if (board[i + k][j + k] !== symbol) {
+                        win = false;
+                        break;
+                    }
+                    cells.push({ row: i + k, col: j + k });
+                }
+                if (win) {
+                    winningCells = cells;
+                    return true;
+                }
+            }
+        }
+        
+        // Check diagonals (top-right to bottom-left)
         for (let i = 0; i <= BOARD_SIZE - WIN_LENGTH; i++) {
             for (let j = WIN_LENGTH - 1; j < BOARD_SIZE; j++) {
                 let win = true;
+                const cells = [];
                 for (let k = 0; k < WIN_LENGTH; k++) {
                     if (board[i + k][j - k] !== symbol) {
                         win = false;
                         break;
                     }
+                    cells.push({ row: i + k, col: j - k });
                 }
                 if (win) {
-                    // Save winning cells
-                    winningCells = [];
-                    for (let k = 0; k < WIN_LENGTH; k++) {
-                        winningCells.push({ row: i + k, col: j - k });
-                    }
+                    winningCells = cells;
                     return true;
                 }
             }
@@ -230,11 +237,9 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let j = 0; j < BOARD_SIZE; j++) {
                 if (board[i][j] === '') {
                     board[i][j] = aiSymbol;
-                    if (checkWin(aiSymbol)) {
-                        board[i][j] = '';
-                        return { row: i, col: j };
-                    }
+                    const win = checkWin(aiSymbol);
                     board[i][j] = '';
+                    if (win) return { row: i, col: j };
                 }
             }
         }
@@ -244,22 +249,33 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let j = 0; j < BOARD_SIZE; j++) {
                 if (board[i][j] === '') {
                     board[i][j] = playerSymbol;
-                    if (checkWin(playerSymbol)) {
-                        board[i][j] = '';
-                        return { row: i, col: j };
-                    }
+                    const blocksWin = checkWin(playerSymbol);
                     board[i][j] = '';
+                    if (blocksWin) return { row: i, col: j };
                 }
             }
         }
         
-        // Take center if available
+        // Take center or corners first
         const center = Math.floor(BOARD_SIZE / 2);
         if (board[center][center] === '') {
             return { row: center, col: center };
         }
         
-        // Otherwise random move
+        // Then check corners
+        const corners = [
+            {row: 0, col: 0},
+            {row: 0, col: BOARD_SIZE - 1},
+            {row: BOARD_SIZE - 1, col: 0},
+            {row: BOARD_SIZE - 1, col: BOARD_SIZE - 1}
+        ];
+        
+        const availableCorners = corners.filter(pos => board[pos.row][pos.col] === '');
+        if (availableCorners.length > 0) {
+            return availableCorners[Math.floor(Math.random() * availableCorners.length)];
+        }
+        
+        // Then random move
         return getRandomMove();
     }
     
@@ -416,7 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start game button
     startButton.addEventListener('click', () => {
         if (!playerSymbol) {
-            alert('Please select a symbol (X or O)');
+            updateStatus('Please select a symbol (X or O)');
             return;
         }
         
