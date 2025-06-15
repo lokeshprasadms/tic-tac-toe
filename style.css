@@ -8,8 +8,9 @@ body {
     min-height: 100vh;
     background-color: #f0f0f0;
     color: #333;
-    box-sizing: border-box; /* Include padding and border in element's total width and height */
-    overflow-y: auto; /* Allow scrolling if content is too tall, but aim to fit */
+    box-sizing: border-box; /* Crucial for consistent sizing */
+    overflow-x: hidden; /* Prevent horizontal scroll on small screens */
+    overflow-y: auto; /* Allow vertical scroll if content is genuinely too tall */
 }
 
 /* Game Container */
@@ -19,16 +20,16 @@ body {
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     text-align: center;
-    width: 90%; /* Take 90% of viewport width on small screens */
-    max-width: 500px; /* Max width for desktop to prevent it from getting too big */
-    margin: 20px auto; /* Auto margin centers it horizontally, 20px top/bottom margin */
+    width: 90%; /* Responsive width for container */
+    max-width: 500px; /* Maximum width for desktop screens */
+    margin: 20px auto; /* Centers horizontally and provides vertical spacing */
     box-sizing: border-box;
 }
 
 h1 {
     color: #4CAF50; /* A pleasant green */
     margin-bottom: 20px;
-    font-size: 2em; /* Default font size */
+    font-size: 2em; /* Default font size for desktop */
 }
 
 /* Game Sections (Setup & Area) */
@@ -103,15 +104,16 @@ button:hover {
 .game-board {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    /* Use vw for a board size that scales with viewport, but don't let it get too large */
-    width: 80vw; /* Take 80% of viewport width */
+    /* Make board dimensions relative to viewport width, with a max */
+    width: 85vw; /* Takes 85% of viewport width */
+    height: 85vw; /* Ensures it's square and scales with width */
     max-width: 450px; /* Max width for desktop */
-    height: 80vw; /* Make height equal to width for square board */
     max-height: 450px; /* Max height for desktop */
-    margin: 20px auto; /* Center the board */
+    margin: 20px auto; /* Centers the board */
     border: 2px solid #333;
     gap: 2px; /* Small gap between cells */
     background-color: #333; /* Color for the gaps */
+    box-sizing: border-box; /* Ensure padding/border is included */
 }
 
 /* Individual Cells */
@@ -122,12 +124,13 @@ button:hover {
     display: flex;
     justify-content: center;
     align-items: center;
-    /* Use a fluid font size relative to the board or viewport */
-    font-size: 5vw; /* Start with 5vw, will adjust for larger screens */
     font-weight: bold;
     cursor: pointer;
     user-select: none; /* Prevent text selection */
     transition: background-color 0.1s ease;
+    box-sizing: border-box; /* Crucial for cell sizing */
+    /* Fluid font size for X/O, scales with board */
+    font-size: 6vw; /* Default for smaller screens */
 }
 
 .cell:hover {
@@ -156,41 +159,38 @@ button:hover {
 
 /* Responsive adjustments */
 @media (min-width: 600px) {
-    /* Adjust font size for larger screens when 5vw might become too big */
+    /* For screens larger than 600px, fix font size to prevent it from getting too big */
+    h1 {
+        font-size: 2.5em;
+    }
     .cell {
-        font-size: 40px; /* Fixed font size on larger screens */
+        font-size: 50px; /* Fixed font size for larger screens */
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 400px) {
     .game-container {
-        padding: 15px;
+        padding: 10px;
         margin: 10px auto;
     }
-
     h1 {
-        font-size: 1.6em;
+        font-size: 1.5em;
     }
-
     .option-group select {
         width: 95%;
     }
-
     button {
-        padding: 10px 20px;
-        font-size: 0.9em;
+        padding: 8px 15px;
+        font-size: 0.8em;
     }
-
     .game-info {
         font-size: 0.9em;
     }
-
     .game-board {
-        width: 90vw; /* Take more width on very small screens */
-        height: 90vw;
+        width: 95vw; /* Take more width on very small screens */
+        height: 95vw;
     }
-
     .cell {
-        font-size: 7vw; /* Adjust font size relative to even smaller viewport */
+        font-size: 8vw; /* Adjust font size relative to even smaller viewport */
     }
 }
