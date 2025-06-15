@@ -1,85 +1,138 @@
-body {
-  margin 0;
-  padding 0;
-  font-family 'Segoe UI', sans-serif;
-  background #111827;
-  color #f9fafb;
-  display flex;
-  justify-content center;
-  align-items center;
-  min-height 100vh;
+// ========= ELEMENTS & CONSTANTS =========
+const boardEl = document.getElementById('board');
+const statusEl = document.getElementById('status-message');
+const restartBtn = document.getElementById('restart-btn');
+const diffSelect = document.getElementById('difficulty');
+
+const PLAYER = 'X';
+const AI = 'O';
+const SIZE = 5;
+
+// ========= GAME STATE =========
+let board = [];
+let gameOver = false;
+
+// ========= INITIALIZATION =========
+function initBoard() {
+  board = Array(SIZE * SIZE).fill('');
+  gameOver = false;
+  renderBoard();
+  statusEl.textContent = 'Your turn!';
+}
+restartBtn.addEventListener('click', initBoard);
+diffSelect.addEventListener('change', initBoard);
+
+// ========= RENDERING =========
+function renderBoard() {
+  boardEl.innerHTML = '';
+  board.forEach((cell, idx) => {
+    const div = document.createElement('div');
+    div.className = 'cell';
+    div.textContent = cell;
+    div.onclick = () => playerMove(idx);
+    boardEl.appendChild(div);
+  });
 }
 
-.game-container {
-  width 100%;
-  max-width 420px;
-  padding 1rem;
-  box-sizing border-box;
-  text-align center;
+// ========= PLAYER & AI MOVES =========
+function playerMove(idx) {
+  if (gameOver || board[idx]) return;
+  board[idx] = PLAYER;
+  updateAfterMove(PLAYER);
+  if (!gameOver) setTimeout(aiMove, 100);
 }
 
-h1 {
-  margin-bottom 1rem;
-  font-size 1.5rem;
+function aiMove() {
+  const level = diffSelect.value;
+  let idx = level === 'easy'
+    ? randomMove()
+    : bestMove(level === 'medium' ? 1 : 2);
+  if (idx !== null) board[idx] = AI;
+  updateAfterMove(AI);
 }
 
-.settings {
-  margin-bottom 1rem;
+// ========= MOVE HANDLER =========
+function updateAfterMove(mark) {
+  renderBoard();
+  if (checkWin(mark)) {
+    endGame(mark === PLAYER ? 'You win!' : 'AI wins!');
+  } else if (board.every(cell => cell)) {
+    endGame("It's a draw!");
+  } else {
+    statusEl.textContent = mark === PLAYER ? 'AI is thinking…' : 'Your turn!';
+  }
 }
 
-#difficulty {
-  padding 0.4rem;
-  border-radius 6px;
-  border none;
-  font-size 1rem;
+// ========= END GAME =========
+function endGame(msg) {
+  gameOver = true;
+  statusEl.textContent = msg;
 }
 
-.board {
-  display grid;
-  grid-template-columns repeat(5, 1fr);
-  gap 4px;
-  margin 0 auto;
-  width 100%;
-  max-width 100%;
+// ========= WIN CHECK =========
+function checkWin(player) {
+  const lines = [];
+  for (let i = 0; i < SIZE; i++) {
+    lines.push([...Array(SIZE)].map((_, j) => i * SIZE + j)); // row
+    lines.push([...Array(SIZE)].map((_, j) => j * SIZE + i)); // col
+  }
+  lines.push([...Array(SIZE)].map((_, i) => i * SIZE + i));             // diag
+  lines.push([...Array(SIZE)].map((_, i) => i * SIZE + (SIZE-1-i)));   // anti-diag
+  return lines.some(line => line.every(i => board[i] === player));
 }
 
-.board div {
-  background #1f2937;
-  aspect-ratio 11;
-  font-size 1.8rem;
-  display flex;
-  justify-content center;
-  align-items center;
-  border-radius 4px;
-  cursor pointer;
-  user-select none;
-  transition background 0.2s;
+// ========= AI HELPERS =========
+function randomMove() {
+  const empties = board.map((c,i) => c === '' ? i : null).filter(v => v !== null);
+  return empties.length ? empties[Math.floor(Math.random() * empties.length)] : null;
 }
 
-.board divhover {
-  background #374151;
+function bestMove(depth) {
+  let bestScore = -Infinity, move = null;
+  for (let i = 0; i < board.length; i++) {
+    if (!board[i]) {
+      board[i] = AI;
+      let score = minimax(depth-1, false, -Infinity, Infinity);
+      board[i] = '';
+      if (score > bestScore) { bestScore = score; move = i; }
+    }
+  }
+  return move;
 }
 
-.status {
-  margin-top 1rem;
-  font-weight bold;
-  min-height 24px;
+function minimax(depth, isMax, alpha, beta) {
+  if (checkWin(AI)) return 10;
+  if (checkWin(PLAYER)) return -10;
+  if (depth === 0 || board.every(c => c)) return 0;
+
+  if (isMax) {
+    let maxEval = -Infinity;
+    for (let i = 0; i < board.length; i++) {
+      if (!board[i]) {
+        board[i] = AI;
+        let eval = minimax(depth-1, false, alpha, beta);
+        board[i] = '';
+        maxEval = Math.max(maxEval, eval);
+        alpha = Math.max(alpha, eval);
+        if (beta <= alpha) break;
+      }
+    }
+    return maxEval;
+  } else {
+    let minEval = Infinity;
+    for (let i = 0; i < board.length; i++) {
+      if (!board[i]) {
+        board[i] = PLAYER;
+        let eval = minimax(depth-1, true, alpha, beta);
+        board[i] = '';
+        minEval = Math.min(minEval, eval);
+        beta = Math.min(beta, eval);
+        if (beta <= alpha) break;
+      }
+    }
+    return minEval;
+  }
 }
 
-.footer {
-  margin-top 1rem;
-}
-
-#restart-btn {
-  padding 0.6rem 1.2rem;
-  background #10b981;
-  border none;
-  color white;
-  font-size 1rem;
-  border-radius 6px;
-  cursor pointer;
-}
-
-#restart-btnhover {
-  background #059669;
-}
+// ========= START THE GAME =========
+initBoard();
