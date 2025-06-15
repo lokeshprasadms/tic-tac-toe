@@ -516,3 +516,4 @@ document.addEventListener('DOMContentLoaded', () => {
         symbolButtons[0].click();
     }
 });
+
