@@ -1,253 +1,220 @@
-/* Modern Reset */
-*, *::before, *::after {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-/* Base Styles */
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #f0f2f5;
-    color: #333;
-    line-height: 1.5;
+    background-color: rgb(32, 32, 32);
+    background-image: url("https://janschreiber.github.io/img2/black-chalk.jpg");
+    color: rgb(230, 230, 230);
+    text-align: center;
+    font-family: 'Indie Flower', 'Comic Sans', cursive;
+    font-size: 16px;
+    margin: 0;
+    padding: 20px;
     min-height: 100vh;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    padding: 20px;
+    justify-content: center;
 }
-
-/* Game Container */
-.game-container {
-    width: 100%;
-    max-width: 400px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    padding: 20px;
-}
-
-/* Header */
-.header {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
 h1 {
-    font-size: 1.8rem;
-    color: #2d3748;
-    margin-bottom: 10px;
-    background: linear-gradient(90deg, #4f46e5, #7c3aed);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    line-height: 1em;
+    margin-bottom: 0;
+    padding-bottom: 5px;
+    font-size: 2.8em;
+    font-weight: bold;
 }
+h2 {
+    font-size: 1.3em;
+    font-weight: bold;
+    padding: 0;
+    margin: 0;
 
-.scores {
+}
+h3 {
+    font-size: 1.1em;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    padding: 0;
+    margin: 10px 0 2px 0;
+}
+table {
+    margin: 2% auto;
+    border-collapse: collapse;
+}
+.game-container {
     display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.score {
-    flex: 1;
-    background: #f8fafc;
-    padding: 8px;
-    border-radius: 8px;
-    font-weight: 600;
-    text-align: center;
-    font-size: 0.9rem;
-}
-
-/* Game Board */
-.game-board {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 6px;
-    margin: 20px 0;
-    background: #e2e8f0;
-    padding: 8px;
-    border-radius: 8px;
-}
-
-.cell {
-    aspect-ratio: 1;
-    border: none;
-    background: white;
-    border-radius: 6px;
-    font-size: 1.5rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    max-width: 100%;
+    margin: 0 auto;
+    gap: 20px;
 }
 
-.cell:hover {
-    background: #f8fafc;
+.board-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
 }
 
-.cell:active {
-    transform: scale(0.95);
-}
-
-.cell.x {
-    color: #ef4444;
-}
-
-.cell.o {
-    color: #3b82f6;
-}
-
-.cell.win {
-    background: rgba(74, 222, 128, 0.2);
-}
-
-/* Controls */
 .controls {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin: 20px 0;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
 }
 
 .difficulty {
     display: flex;
-    gap: 6px;
+    gap: 15px;
+    font-size: 1.1em;
 }
 
-.btn {
-    padding: 10px 16px;
-    border: none;
-    border-radius: 8px;
-    background: #e2e8f0;
-    color: #4a5568;
-    font-weight: 600;
+#table_game {
+    position: relative;
+    font-size: 1.8vw;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    max-width: 95%;
+    aspect-ratio: 1/1;
+}
+
+.td_game {
+    border: 2px solid rgba(230, 230, 230, 0.8);
+    width: 20%;
+    height: 20%;
+    padding: 0;
+    vertical-align: middle;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+/* Adjust font size for smaller screens */
+@media (max-width: 768px) {
+    #table_game {
+        font-size: 3.5vw;
+    }
+}
+
+@media (max-width: 480px) {
+    #table_game {
+        font-size: 4.5vw;
+    }
+}
+
+.td_game:hover {
+    background: rgba(255, 255, 255, 0.1);
     cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.9rem;
-    flex: 1;
-    text-align: center;
 }
 
-.btn:hover {
-    background: #cbd5e0;
-}
-
-.btn:active {
-    transform: translateY(1px);
-}
-
-.btn.active {
-    background: #4f46e5;
-    color: white;
-}
-
-.btn.primary {
-    background: #4f46e5;
-    color: white;
-}
-
-.btn.primary:hover {
-    background: #4338ca;
-}
-
-/* Status */
-.status {
-    text-align: center;
-    font-weight: 500;
-    color: #4a5568;
-    margin-top: 10px;
-    min-height: 24px;
-}
-
-/* Modal */
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+.fixed {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s;
-    z-index: 100;
+    overflow: hidden;
+    cursor: pointer;
 }
-
-.modal.show {
-    opacity: 1;
-    pointer-events: all;
-}
-
-.modal-content {
-    background: white;
-    padding: 24px;
-    border-radius: 12px;
+.td_list {
     text-align: center;
-    max-width: 300px;
-    width: 90%;
-    transform: translateY(20px);
-    transition: transform 0.3s;
+    font-size: 1.3em;
+    font-weight: bold;
+}
+.th_list {
+    font-size: 1.3em;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: underline;
+}
+#restart {
+    font-size: 2.5em;
+    width: 1.5em;
+    height: 1.5em;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(230, 230, 230, 0.8);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    color: white;
+    margin: 0;
 }
 
-.modal.show .modal-content {
-    transform: translateY(0);
+#restart:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
+}
+.x {
+    color: darksalmon;
+    position: relative;
+    top: -8px;
+    font-size: 1.2em;
+    cursor: default;
+}
+.o {
+    color: aquamarine;
+    position: relative;
+    top: -7px;
+    font-size: 1.0em;
+    cursor: default;
 }
 
-.modal h2 {
-    margin-bottom: 20px;
-    color: #2d3748;
+/* modal background */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* enable scroll if needed */
+    background-color: black; /* fallback color */
+    background-color: rgba(0, 0, 0, 0.6);
 }
 
-/* Responsive Design */
-@media (max-width: 400px) {
-    .game-container {
-        padding: 15px;
-    }
-    
-    h1 {
-        font-size: 1.5rem;
-    }
-    
-    .score {
-        font-size: 0.8rem;
-        padding: 6px;
-    }
-    
-    .cell {
-        font-size: 1.2rem;
-    }
-    
-    .btn {
-        padding: 8px 12px;
-        font-size: 0.85rem;
-    }
+/* modal content */
+.modal-content {
+    background-color: rgb(240, 240, 240);
+    color: rgb(32, 32, 32);
+    font-size: 2em;
+    font-weight: bold;
+    /* 16 % from the top and centered */
+    margin: 16% auto;
+    padding: 20px;
+    border: 2px solid black;
+    border-radius: 10px;
+    width: 380px;
+    max-width: 80%;
+}
+.modal-content p {
+    margin: 0;
+    padding: 0;
 }
 
-/* Animations */
-@keyframes popIn {
-    0% { transform: scale(0.8); opacity: 0; }
-    70% { transform: scale(1.1); }
-    100% { transform: scale(1); opacity: 1; }
+/* close button for modal dialog */
+.close {
+    color: rgb(170, 170, 170);
+    float: right;
+    position: relative;
+    top: -25px;
+    right: -10px;
+    font-size: 34px;
+    font-weight: bold;
+}
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
 }
 
-.cell.x, .cell.o {
-    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
-    70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
-    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
-}
-
-.cell.win {
-    animation: pulse 1.5s infinite;
+.win-color {
+    background-color: rgb(240, 240, 240);
 }
