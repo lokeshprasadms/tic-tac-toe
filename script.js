@@ -33,11 +33,19 @@ let scores = {
 
 // Initialize the game
 function initGame() {
+    // Reset game state
+    gameState = Array(CONFIG.GRID_SIZE * CONFIG.GRID_SIZE).fill(CONFIG.EMPTY);
+    currentPlayer = CONFIG.PLAYER;
+    CONFIG.GAME_ACTIVE = true;
+    
+    // Clear any existing board
+    gameBoard.innerHTML = '';
+    
+    // Set up the game
     renderBoard();
     setupEventListeners();
     loadScores();
     updateStatus("Your turn (X)");
-    CONFIG.GAME_ACTIVE = true;
 }
 
 // Set up event listeners
@@ -92,19 +100,27 @@ function handleCellClick(e) {
     }
     
     // AI's turn
+    CONFIG.GAME_ACTIVE = false; // Prevent player from making moves while AI is thinking
+    
+    // Small delay for better UX
     setTimeout(() => {
         const aiMove = getAIMove();
-        makeMove(aiMove, CONFIG.AI);
-        
-        if (checkWin(gameState, CONFIG.AI)) {
-            endGame('ai');
-            return;
+        if (aiMove !== -1) {
+            makeMove(aiMove, CONFIG.AI);
+            
+            if (checkWin(gameState, CONFIG.AI)) {
+                endGame('ai');
+                return;
+            }
+            
+            if (isBoardFull()) {
+                endGame('draw');
+                return;
+            }
         }
         
-        if (isBoardFull()) {
-            endGame('draw');
-        }
-    }, 300); // Small delay for better UX
+        CONFIG.GAME_ACTIVE = true; // Re-enable player moves
+    }, 100); // Reduced delay for better responsiveness
 }
 
 // Make a move on the board
@@ -285,19 +301,26 @@ function isBoardFull() {
 
 // Start a new game
 function startNewGame() {
+    // Reset game state
     gameState = Array(CONFIG.GRID_SIZE * CONFIG.GRID_SIZE).fill(CONFIG.EMPTY);
     currentPlayer = CONFIG.PLAYER;
     CONFIG.GAME_ACTIVE = true;
     
     // Clear the board
-    const cells = document.querySelectorAll('.cell');
-    cells.forEach(cell => {
-        cell.textContent = '';
-        cell.className = 'cell';
-    });
+    gameBoard.innerHTML = '';
     
+    // Re-render the board
+    renderBoard();
+    
+    // Update UI
     updateStatus("Your turn (X)");
     hideModal(gameOverModal);
+    
+    // Ensure all cells are clickable
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach(cell => {
+        cell.addEventListener('click', handleCellClick);
+    });
 }
 
 // Render the game board
@@ -322,23 +345,35 @@ function updateStatus(message) {
 function endGame(winner) {
     CONFIG.GAME_ACTIVE = false;
     
+    // Update scores and show appropriate message
+    let title, message;
+    
     switch (winner) {
         case 'player':
             scores.player++;
-            showGameOver('You Win!', 'Congratulations! You defeated the AI!');
+            title = 'You Win!';
+            message = 'Congratulations! You defeated the AI!';
             break;
         case 'ai':
             scores.ai++;
-            showGameOver('AI Wins!', 'Better luck next time!');
+            title = 'AI Wins!';
+            message = 'Better luck next time!';
             break;
         case 'draw':
             scores.ties++;
-            showGameOver('Game Drawn!', 'The game ended in a draw!');
+            title = 'Game Drawn!';
+            message = 'The game ended in a draw!';
             break;
     }
     
+    // Update UI
     updateScores();
     saveScores();
+    
+    // Small delay before showing game over for better UX
+    setTimeout(() => {
+        showGameOver(title, message);
+    }, 300);
 }
 
 // Show game over modal

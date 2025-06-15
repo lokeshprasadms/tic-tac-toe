@@ -7,9 +7,9 @@
     --danger-color: #ff4d4d;
     --light-color: #f8f9fa;
     --dark-color: #343a40;
-    --border-radius: 8px;
-    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    --transition: all 0.3s ease;
+    --border-radius: 6px;
+    --box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    --transition: all 0.15s ease;
 }
 
 * {
@@ -22,77 +22,79 @@ body {
     font-family: 'Roboto', sans-serif;
     background-color: #f5f7ff;
     color: #333;
-    line-height: 1.6;
+    line-height: 1.4;
     min-height: 100vh;
-    padding: 16px;
+    padding: 8px;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
+    overflow-x: hidden;
 }
 
 /* Game Container */
 .game-container {
     width: 100%;
-    max-width: 1000px;
+    max-width: 500px;
     background: white;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    height: 90vh;
-    max-height: 800px;
+    margin: 0 auto;
 }
 
 .game-header {
-    padding: 16px;
+    padding: 10px 12px;
     background: var(--primary-color);
     color: white;
     text-align: center;
 }
 
 .game-header h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 1.2rem;
+    font-weight: 600;
     margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .game-content {
     display: flex;
-    flex: 1;
-    overflow: hidden;
+    flex-direction: column;
+    padding: 10px;
 }
 
 /* Game Board */
 .game-board {
-    flex: 1;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 6px;
-    padding: 16px;
-    aspect-ratio: 1/1;
-    max-height: 100%;
+    gap: 4px;
+    padding: 8px;
+    width: 100%;
     max-width: 100%;
-    margin: auto;
+    aspect-ratio: 1/1;
+    margin: 0 auto;
 }
 
 .cell {
     background: #f8f9ff;
-    border: 2px solid #e0e5ff;
-    border-radius: var(--border-radius);
+    border: 1px solid #e0e5ff;
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
+    font-size: 1.2rem;
     font-weight: 700;
     cursor: pointer;
-    transition: var(--transition);
     aspect-ratio: 1/1;
+    transition: background 0.1s ease;
+    user-select: none;
 }
 
-.cell:hover {
+.cell:active {
     background: #eef1ff;
-    transform: scale(0.98);
 }
 
 .cell.x {
@@ -106,7 +108,6 @@ body {
 .cell.win {
     background: rgba(74, 107, 255, 0.1);
     border-color: var(--primary-color);
-    animation: pop 0.3s ease;
 }
 
 @keyframes pop {
@@ -127,23 +128,23 @@ body {
 
 /* Scoreboard */
 .scoreboard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     background: #f8f9ff;
     border-radius: var(--border-radius);
-    padding: 16px;
-    text-align: center;
-    margin-bottom: 20px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
 }
 
 .score {
-    margin: 8px 0;
+    text-align: center;
+    flex: 1;
 }
 
 .score span {
     display: block;
-}
-
-.score .player, .score .ai {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: var(--secondary-color);
 }
 
@@ -158,47 +159,46 @@ body {
 }
 
 #playerScore, #aiScore {
-    font-size: 1.8rem;
+    font-size: 1.4rem;
     font-weight: 700;
-    margin-top: 4px;
+    margin-top: 2px;
 }
 
 .vs {
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--secondary-color);
-    margin: 8px 0;
+    padding: 0 8px;
 }
 
 /* Controls */
 .controls {
-    margin-top: auto;
+    margin-top: 12px;
 }
 
 .difficulty {
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .difficulty h3 {
-    font-size: 1rem;
-    margin-bottom: 8px;
+    font-size: 0.9rem;
+    margin-bottom: 6px;
     color: var(--secondary-color);
 }
 
 .difficulty-buttons {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    display: flex;
+    gap: 6px;
 }
 
 .difficulty-btn {
-    padding: 8px;
+    flex: 1;
+    padding: 6px 4px;
     border: 1px solid #ddd;
     background: white;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.85rem;
-    transition: var(--transition);
+    font-size: 0.8rem;
 }
 
 .difficulty-btn.active {
@@ -207,48 +207,35 @@ body {
     border-color: var(--primary-color);
 }
 
-.difficulty-btn:not(.active):hover {
-    background: #f0f2ff;
-}
-
 .btn {
     display: block;
     width: 100%;
-    padding: 12px;
+    padding: 10px;
     background: var(--primary-color);
     color: white;
     border: none;
-    border-radius: var(--border-radius);
-    font-size: 1rem;
+    border-radius: 4px;
+    font-size: 0.95rem;
     font-weight: 500;
     cursor: pointer;
-    transition: var(--transition);
     margin-top: 8px;
 }
 
-.btn:hover {
-    background: var(--primary-dark);
-    transform: translateY(-1px);
-}
-
 .btn:active {
-    transform: translateY(0);
+    opacity: 0.9;
 }
 
 .btn-secondary {
     background: #6c757d;
 }
 
-.btn-secondary:hover {
-    background: #5a6268;
-}
-
 .status {
-    margin-top: 20px;
+    margin-top: 10px;
     text-align: center;
-    font-weight: 500;
+    font-size: 0.9rem;
     color: var(--secondary-color);
-    min-height: 24px;
+    min-height: 20px;
+    padding: 4px 0;
 }
 
 /* Modal */
@@ -263,6 +250,7 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    padding: 16px;
 }
 
 .modal.show {
@@ -271,79 +259,120 @@ body {
 
 .modal-content {
     background: white;
-    padding: 24px;
-    border-radius: var(--border-radius);
-    max-width: 90%;
-    width: 400px;
+    padding: 20px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 300px;
     text-align: center;
 }
 
 .modal h2 {
-    margin-bottom: 16px;
+    font-size: 1.3rem;
+    margin-bottom: 12px;
     color: var(--dark-color);
 }
 
 .modal p {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     color: var(--secondary-color);
+    font-size: 0.95rem;
 }
 
 .modal-buttons {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    display: flex;
+    gap: 10px;
+}
+
+.modal-buttons .btn {
+    flex: 1;
+    margin: 0;
+    padding: 6px 8px;
+    font-size: 0.85rem;
 }
 
 /* Responsive Design */
-@media (max-width: 900px) {
-    .game-content {
-        flex-direction: column;
-        overflow-y: auto;
+@media (max-width: 600px) {
+    body {
+        padding: 0;
+        display: block;
+    }
+    
+    .game-container {
+        border-radius: 0;
+        max-width: 100%;
+        min-height: 100vh;
+    }
+    
+    .game-header {
+        padding: 8px;
+    }
+    
+    .game-header h1 {
+        font-size: 1.1rem;
     }
     
     .game-board {
-        width: 100%;
-        max-width: 500px;
-        margin: 0 auto;
-    }
-    
-    .game-sidebar {
-        width: 100%;
-        border-left: none;
-        border-top: 1px solid #eee;
-        padding: 20px 16px;
-    }
-    
-    .controls {
-        margin-top: 20px;
-    }
-}
-
-@media (max-width: 500px) {
-    .game-container {
-        height: 100%;
-        max-height: none;
-        border-radius: 0;
-    }
-    
-    body {
-        padding: 0;
+        padding: 6px;
+        gap: 3px;
     }
     
     .cell {
-        font-size: 1.5rem;
+        font-size: 1.1rem;
+    }
+    
+    .scoreboard {
+        padding: 6px 8px;
+    }
+    
+    #playerScore, #aiScore {
+        font-size: 1.2rem;
+    }
+    
+    .vs {
+        font-size: 0.9rem;
+        padding: 0 4px;
+    }
+    
+    .difficulty h3 {
+        font-size: 0.85rem;
+        margin-bottom: 4px;
     }
     
     .difficulty-buttons {
-        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    
+    .difficulty-btn {
+        font-size: 0.75rem;
+        padding: 4px 2px;
+    }
+    
+    .btn {
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+    
+    .status {
+        font-size: 0.85rem;
+        margin-top: 8px;
     }
     
     .modal-content {
-        width: 95%;
-        padding: 20px 16px;
+        padding: 16px;
     }
     
-    .modal-buttons {
-        grid-template-columns: 1fr;
+    .modal h2 {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+    
+    .modal p {
+        font-size: 0.9rem;
+        margin-bottom: 12px;
+    }
+    
+    .modal-buttons .btn {
+        font-size: 0.85rem;
+        padding: 6px 8px;
     }
 }
