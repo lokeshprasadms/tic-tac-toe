@@ -89,11 +89,38 @@ select {
     width: 100%;
     padding: 0.8rem;
     font-size: 1rem;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(30, 30, 30, 0.8);
     border: 1px solid var(--premium-accent);
-    color: var(--premium-text);
+    color: #ffffff;
     border-radius: 6px;
     margin-top: 0.5rem;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23ffffff' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.8rem center;
+    padding-right: 2.5rem;
+}
+
+/* Style the dropdown options */
+select option {
+    background: #2a1f1a;
+    color: #ffffff;
+    padding: 0.5rem;
+}
+
+/* Focus state */
+select:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(210, 105, 30, 0.4);
+    border-color: var(--premium-accent);
+}
+
+/* Remove default arrow in IE10 and IE11 */
+select::-ms-expand {
+    display: none;
 }
 
 .start-btn, .restart-btn {
