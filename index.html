@@ -1,26 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tic Tac Toe 5×5</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>5x5 Tic-Tac-Toe</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="game-container">
-    <div id="controls">
-      <select id="difficulty">
-        <option value="easy">Easy</option>
-        <option value="medium" selected>Medium</option>
-        <option value="hard">Hard</option>
-      </select>
-      <button id="restart-btn">Restart Game</button>
+    <div class="game-container">
+        <div class="header">
+            <h1>Tic-Tac-Toe</h1>
+            <div class="scores">
+                <div class="score" id="scoreX">X: 0</div>
+                <div class="score" id="scoreTies">Ties: 0</div>
+                <div class="score" id="scoreO">O: 0</div>
+            </div>
+        </div>
+
+        <div class="game-board" id="board"></div>
+
+        <div class="controls">
+            <div class="difficulty">
+                <button class="btn" data-difficulty="easy">Easy</button>
+                <button class="btn active" data-difficulty="medium">Medium</button>
+                <button class="btn" data-difficulty="hard">Hard</button>
+            </div>
+            <button id="restartBtn" class="btn">New Game</button>
+        </div>
+
+        <div class="status" id="status">Your turn (X)</div>
     </div>
 
-    <div id="board"></div>
-    <div id="status-message">Your turn!</div>
-  </div>
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h2 id="modalText">Player X Wins!</h2>
+            <button id="playAgainBtn" class="btn">Play Again</button>
+        </div>
+    </div>
 
-  <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
