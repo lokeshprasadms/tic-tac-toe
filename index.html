@@ -1,46 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>5x5 Tic-Tac-Toe Challenge</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Premium 5x5 Tic Tac Toe</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div class="game-container">
-        <h1>5x5 Tic-Tac-Toe Challenge</h1>
-
-        <div id="game-setup" class="game-section">
-            <h2>Game Setup</h2>
-            <div class="option-group">
-                <label for="difficulty">Select Difficulty:</label>
-                <select id="difficulty">
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                </select>
-            </div>
-            <div class="option-group">
-                <label for="player-choice">Play as:</label>
-                <select id="player-choice">
-                    <option value="X">X</option>
-                    <option value="O">O</option>
-                </select>
-            </div>
-            <button id="start-game-btn">Start Game</button>
-        </div>
-
-        <div id="game-area" class="game-section hidden">
-            <div class="game-info">
-                <p>Current Turn: <span id="current-turn">X</span></p>
-                <p id="game-message"></p>
-            </div>
-            <div id="game-board" class="game-board">
-                </div>
-            <button id="restart-game-btn">Restart Game</button>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+  <div id="game-container">
+    <section id="settings">
+      <h1>5x5 Tic Tac Toe</h1>
+      <div class="option">
+        <label for="difficulty">Select AI Difficulty:</label>
+        <select id="difficulty">
+          <option value="easy" selected>Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+      <div class="option">
+        <p>Select Your Symbol:</p>
+        <button class="symbol-btn" id="choose-x">X</button>
+        <button class="symbol-btn" id="choose-o">O</button>
+      </div>
+    </section>
+    <section id="game" class="hidden">
+      <header id="status">Your turn (<span id="player-symbol"></span>)</header>
+      <div id="board"></div>
+      <button class="action-btn hidden" id="restart">Restart Game</button>
+    </section>
+  </div>
+  <script src="script.js"></script>
 </body>
 </html>
+
