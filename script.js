@@ -331,11 +331,66 @@ document.addEventListener('DOMContentLoaded', () => {
         return bestMove || getRandomMove();
     }
     
+    // Helper function to check for win on a specific board
+    function checkWinOnBoard(board, symbol) {
+        // Check rows and columns
+        for (let i = 0; i < BOARD_SIZE; i++) {
+            for (let j = 0; j <= BOARD_SIZE - WIN_LENGTH; j++) {
+                // Check rows
+                let rowWin = true;
+                for (let k = 0; k < WIN_LENGTH; k++) {
+                    if (board[i][j + k] !== symbol) {
+                        rowWin = false;
+                        break;
+                    }
+                }
+                if (rowWin) return true;
+                
+                // Check columns
+                let colWin = true;
+                for (let k = 0; k < WIN_LENGTH; k++) {
+                    if (board[j + k][i] !== symbol) {
+                        colWin = false;
+                        break;
+                    }
+                }
+                if (colWin) return true;
+            }
+        }
+        
+        // Check diagonals
+        for (let i = 0; i <= BOARD_SIZE - WIN_LENGTH; i++) {
+            for (let j = 0; j <= BOARD_SIZE - WIN_LENGTH; j++) {
+                // Top-left to bottom-right
+                let diag1 = true;
+                for (let k = 0; k < WIN_LENGTH; k++) {
+                    if (board[i + k][j + k] !== symbol) {
+                        diag1 = false;
+                        break;
+                    }
+                }
+                if (diag1) return true;
+                
+                // Top-right to bottom-left
+                let diag2 = true;
+                for (let k = 0; k < WIN_LENGTH; k++) {
+                    if (board[i + k][j + WIN_LENGTH - 1 - k] !== symbol) {
+                        diag2 = false;
+                        break;
+                    }
+                }
+                if (diag2) return true;
+            }
+        }
+        
+        return false;
+    }
+    
     // Minimax algorithm with alpha-beta pruning
     function minimax(board, depth, isMaximizing, alpha = -Infinity, beta = Infinity) {
         // Check terminal states
-        if (checkWin(aiSymbol)) return 10 - depth;
-        if (checkWin(playerSymbol)) return depth - 10;
+        if (checkWinOnBoard(board, aiSymbol)) return 10 - depth;
+        if (checkWinOnBoard(board, playerSymbol)) return depth - 10;
         if (isBoardFull() || depth >= 3) return 0; // Limit depth for performance
         
         if (isMaximizing) {
@@ -344,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 for (let j = 0; j < BOARD_SIZE; j++) {
                     if (board[i][j] === '') {
                         board[i][j] = aiSymbol;
-                        let evalScore = minimax(board, depth + 1, false, alpha, beta);
+                        const evalScore = minimax(board, depth + 1, false, alpha, beta);
                         board[i][j] = '';
                         maxEval = Math.max(maxEval, evalScore);
                         alpha = Math.max(alpha, evalScore);
@@ -359,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 for (let j = 0; j < BOARD_SIZE; j++) {
                     if (board[i][j] === '') {
                         board[i][j] = playerSymbol;
-                        let evalScore = minimax(board, depth + 1, true, alpha, beta);
+                        const evalScore = minimax(board, depth + 1, true, alpha, beta);
                         board[i][j] = '';
                         minEval = Math.min(minEval, evalScore);
                         beta = Math.min(beta, evalScore);
